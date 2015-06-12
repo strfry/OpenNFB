@@ -27,7 +27,9 @@ p6 = win.addPlot(title="Updating plot")
 curve = p6.plot(pen='y')
 curve2 = p6.plot(pen='r')
 data = np.zeros(1)
-data2 = data
+data2 = np.zeros(1)
+data3 = np.zeros(1)
+data4 = np.zeros(1)
 p6.setAutoPan(True)
 p6.setXRange(0, 500)
 p6.enableAutoRange('x', True)
@@ -66,12 +68,31 @@ iirBandPass = scipy.signal.iirfilter(17, [4.0 / 125., 35.0 / 125.], btype='band'
 
 filter = firBandPass
 
+
+from mpd import MPDClient
+client = MPDClient()  
+client.connect("whisky", 6600)
+
+
+def setMPDVolume(val):
+  val = np.max(val, 0.3)
+  client.setvol(int(val * 100))
+
+
+win.nextRow()
+p7 = win.addPlot(title="Updating plot")
+curve3 = p7.plot(pen='g')
+
 @QtCore.Slot(object)
 def handlePacket(packet):
-    global curve, curve2, data, data2, p6, foo, filter
+    global curve, curve2, data, data2, data3, data4, p6, p7, curve3, foo, filter
 
-    data = np.append(data, packet[0])
+    #print '0', len(data)
 
+    data = np.append(data,packet[0])
+
+    #print '1', len(data)
+		
     filterBuffer = data[-len(filter):]
 
     if not isinstance(filter[0], np.ndarray):
@@ -83,20 +104,48 @@ def handlePacket(packet):
 
     data2 = np.append(data2, newValue)
 
-
-    #curve.setData(data)
+    curve.setData(data4)
     curve2.setData(data2)
 
+    #print '2', len(data)
+
     power, ratios = pyeeg.bin_power(data2[-250:], [4, 8, 12, 15, 20, 30, 50], 250)
+
+    # Workaround to skip peaks at start:
+    if len(data3) == 1000:
+      data3 = [0] * 1000
+    val = power[1] - power[0]
+    data3 = np.append(data3, val)
+
+
+    min_smr = np.min(data3[-5000:])
+    max_smr = np.max(data3[-5000:])
+
+    
+#    val = (val - min_smr) /  (max_smr - min_smr)
+    from scipy.special import expit
+    if power[0] == 0.0: power[0] = 1.0
+    val = expit(np.log(float(power[1]) / power[0]))
+
+
+    if len(data3) % 30 == 0:
+      data4 = np.append(data4,val)
+      curve3.setData(data4)
+      setMPDVolume(val)
+
     foo.setOpts(height=ratios)
 
-sourceThread = BDFThread(sys.argv[1])
-#sourceThread = OpenBCIThread(sys.argv[1])
+    #print '3', len(data)
+
+    #print data, data2, data3, data4
+
+#sourceThread = BDFThread(sys.argv[1])
+sourceThread = OpenBCIThread(sys.argv[1])
 
 try:
   write_file = file(sys.argv[2], 'wb')
   import bdf
-  writer = bdf.BDF(8)
+  writer = bdf.BDFWriter(8)
   sourceThread.newPacket.connect(writer.append_sample)
   QtGui.QApplication.instance().aboutToQuit.connect(lambda: writer.write_file(write_file))
 except IndexError:

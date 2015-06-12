@@ -10,3 +10,9 @@ TODO:
 * Spectrogram
 * Look into GNURadio
 * Take a look at OSC (pyosc)
+* Simple plot setup and filter bands
+* Use WAV files everywhere
+
+
+
+Light & Sound Box
