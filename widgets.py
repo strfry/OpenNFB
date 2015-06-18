@@ -19,6 +19,7 @@ class ScrollingPlot(pg.PlotWidget):
         return p
 
     def update(self, name, newValue):
+        # iF newValue is array, append [-1]
         p = self.plots[name]
 
         p.buffer[:-1] = p.buffer[1:]

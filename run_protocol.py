@@ -20,21 +20,25 @@ win.setWindowTitle("OpenNFB")
 # Enable antialiasing for prettier plots
 pg.setConfigOptions(antialias=True)
 
-protocol_filename = 'protocols/alpha-theta.py'
+protocol_filename = 'alpha-theta.py'
 protocol = imp.load_module('foo', file(protocol_filename), protocol_filename, ('.py', 'U', 1))
 
 win.setCentralWidget(protocol.widget())
 win.show()
 
-sourceThread = BDFThread(sys.argv[1])
-#sourceThread = OpenBCIThread(sys.argv[1])
+replay = sys.argv[1] == 'replay'
+if replay:
+    sourceThread = BDFThread(sys.argv[2])
+else:
+    sourceThread = OpenBCIThread(sys.argv[1])
 
 try:
-  write_file = file(sys.argv[2], 'wb')
-  import bdf
-  writer = bdf.BDFWriter(8)
-  sourceThread.newPacket.connect(writer.append_sample)
-  QtGui.QApplication.instance().aboutToQuit.connect(lambda: writer.write_file(write_file))
+    if not replay:
+        write_file = file(sys.argv[2], 'wb')
+        import bdf
+        writer = bdf.BDFWriter(8)
+        sourceThread.newPacket.connect(writer.append_sample)
+        QtGui.QApplication.instance().aboutToQuit.connect(lambda: writer.write_file(write_file))
 except IndexError:
   print "No log file specified"
 

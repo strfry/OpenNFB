@@ -13,6 +13,14 @@ TODO:
 * Simple plot setup and filter bands
 * Use WAV files everywhere
 
+Widgets:
+* Scrolling Plot / Oscillosope
+* Spectrogram (based on Multiple Plots benchmark example)
 
 
 Light & Sound Box
+
+
+Object oriented
+Channel -> device class
+single buffer length across

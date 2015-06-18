@@ -1,1 +1,4 @@
 *.pyc
+recordings
+logs
+.idea
