@@ -20,11 +20,24 @@ win.setWindowTitle("OpenNFB")
 # Enable antialiasing for prettier plots
 pg.setConfigOptions(antialias=True)
 
-protocol_filename = 'alpha-theta.py'
-protocol = imp.load_module('foo', file(protocol_filename), protocol_filename, ('.py', 'U', 1))
+protocol_filename = './alpha-theta.py'
 
-win.setCentralWidget(protocol.widget())
+protocol = None
+
+def handle_reload(path):
+    global protocol
+    protocol = imp.load_module('foo', file(protocol_filename), protocol_filename, ('.py', 'U', 1))
+    win.setCentralWidget(protocol.widget())
+    #win.show()
+    print path
+
+watcher = QtCore.QFileSystemWatcher()
+watcher.addPath(protocol_filename)
+watcher.fileChanged.connect(handle_reload)
+
+handle_reload(protocol_filename)
 win.show()
+
 
 replay = sys.argv[1] == 'replay'
 if replay:
@@ -48,8 +61,11 @@ def handlePacket(packet):
 sourceThread.newPacket.connect(handlePacket)
 sourceThread.start()
 
+def updateGUI():
+    protocol.updateGUI()
+
 guiTimer = QtCore.QTimer()
-guiTimer.timeout.connect(protocol.updateGUI)
+guiTimer.timeout.connect(updateGUI)
 guiTimer.start(0)
 
 

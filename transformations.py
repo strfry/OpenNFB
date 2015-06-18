@@ -24,9 +24,9 @@ class FFT(object):
         return power
 
 class IIRFilter(object):
-    def __init__(self, order = 13, samplingFrequency=250, gridFrequency=50.0):
+    def __init__(self, order = 5, samplingFrequency=250, gridFrequency=50.0):
         self.buffer = np.zeros(300) 
-        self.b, self.a = scipy.signal.iirfilter(7, (1. / 250, 35. / 250), btype='bandpass')
+        #self.b, self.a = scipy.signal.iirfilter(7, (1. / 125, 35. / 125), btype='bandpass')
 
         #self.fir = scipy.signal.firwin(90, (4.0, 35.0), pass_zero=False, nyq=125.0)
         self.order = order
@@ -41,12 +41,13 @@ class IIRFilter(object):
         self.dc = 0.99 * self.dc + newValue * 0.01
 
         filterBuffer = self.buffer[-50:] # Limit the processing length to the order of the filter
-        self.ac = scipy.signal.lfilter(self.a, self.b, filterBuffer)[-1]
+        #self.ac = scipy.signal.lfilter(self.a, self.b, filterBuffer)[-1]
         #self.ac = scipy.signal.lfilter(self.fir, [1.0], filterBuffer - self.dc)[0
 
     def band(self, lo, hi):
         if (lo, hi) not in self.cache:
-          self.cache[(lo, hi)] = scipy.signal.iirfilter(self.order, (lo / 250., hi / 250.), btype='bandpass')
+          print "IIRFilter.band: ", (lo, hi)
+          self.cache[(lo, hi)] = scipy.signal.iirfilter(self.order, (lo / 125., hi / 125.), btype='bandpass')
         b, a = self.cache[(lo, hi)]
         filterBuffer = self.buffer[-100:]
         filt = scipy.signal.lfilter(b, a, filterBuffer)
@@ -58,8 +59,8 @@ class IIRFilter(object):
 	
 	global ptr
 	ptr += 1
-	if ptr % 100 == 0:
-	  print self.dc, self.buffer[-1], result[-1]
+	#if ptr % 100 == 0:
+	  #print self.dc, self.buffer[-1], result[-1]
 
 
 
@@ -71,8 +72,8 @@ class IIRFilter(object):
 class GridFilter(object):
     def __init__(self, samplingFrequency=250, gridFrequency=50.0):
         self.buffer = np.zeros(100)
-        self.b, self.a = scipy.signal.iirfilter(7, (48. / 250, 52. / 250), btype='bandstop'
-    )
+	print "GridFilter init"
+        self.b, self.a = scipy.signal.iirfilter(7, (48. / 250, 52. / 250), btype='bandstop')
 
         #self.fir = scipy.signal.firwin(90, (4.0, 35.0), pass_zero=False, nyq=125.0)
 

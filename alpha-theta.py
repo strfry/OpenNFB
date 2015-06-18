@@ -10,9 +10,11 @@ fftFilt = FFT()
 rawPlot = ScrollingPlot(1000)
 alphaThetaPlot = ScrollingPlot()
 
-rawPlot.plot('theta', pen='r')
-rawPlot.plot('alpha', pen='g')
-rawPlot.plot('beta', pen='b')
+rawPlot.plot('delta', pen=QtGui.QColor('violet'))
+rawPlot.plot('theta', pen=QtGui.QColor('pink'))
+rawPlot.plot('alpha', pen=QtGui.QColor('green'))
+rawPlot.plot('smr', pen=QtGui.QColor('yellow'))
+rawPlot.plot('beta', pen=QtGui.QColor('steelblue'))
 #rawPlot.plot('highbeta', pen='b')
 
 alphaThetaPlot.plot('alpha', pen='g')
@@ -47,15 +49,44 @@ try:
 except Exception, e:
   print "MPD error: ", e
 
+iir0 = IIRFilter()
 iir = IIRFilter()
+iir2 = IIRFilter()
+iir3 = IIRFilter()
+iir4 = IIRFilter()
 
 def update(channels):
     gridFilter.update(channels[0])
 
-    iir.update(channels[0])
-    rawPlot.update('theta', iir.band(4, 8))
-    rawPlot.update('alpha', iir.band(8, 12))
-    rawPlot.update('beta', iir.band(15, 20))
+    iir0.update(channels[0])
+
+
+    delta = iir.band(0.5, 4)
+    sigWODelta = channels[0] - delta
+    iir.update(sigWODelta)
+
+    theta = iir.band(4, 8)
+    sigWOTheta = sigWODelta - theta
+    iir2.update(sigWOTheta)
+
+    alpha = iir2.band(8, 12)
+    sigWOAlpha = sigWOTheta - alpha
+    iir3.update(sigWOAlpha)
+
+    smr = iir3.band(12, 15)
+    sigWOSMR = sigWOAlpha - smr
+    iir4.update(sigWOSMR)
+
+    beta = iir4.band(15, 25)
+    sigWOAlpha = sigWOSMR - beta
+
+    #rawPlot.update('delta', delta)
+    #rawPlot.update('theta', theta)
+    rawPlot.update('alpha', alpha)
+    rawPlot.update('smr', smr)
+    rawPlot.update('beta', beta)
+#    rawPlot.update('alpha', iir.band(8, 12))
+#    rawPlot.update('beta', iir.band(15, 20))
     #rawPlot.update('highbeta', iir.band(15, 25))
 
     #rawPlot.update('dc', gridFilter.dc)
