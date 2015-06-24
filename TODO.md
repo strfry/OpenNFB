@@ -1,8 +1,5 @@
 BUGS:
-* Autopan is scrolling too slow
 * OpenBCI link becomes unreliable sometimes
-* Closing the serial connection sometimes freezes the system on OSX
-
 
 TODO:
 * Make a simple threshold widget
@@ -13,14 +10,30 @@ TODO:
 * Simple plot setup and filter bands
 * Use WAV files everywhere
 
+Live Coding:
+* Use reload(), del dependencies from sys.modules
+
+DSP:
+* Wavelet transforms for ECG analysis
+
 Widgets:
 * Scrolling Plot / Oscillosope
 * Spectrogram (based on Multiple Plots benchmark example)
+* Fire animation
+
+Hardware:
+* Light & Sound Box
 
 
-Light & Sound Box
+DSL Features:
+
+* Object oriented
+* Channel -> device class
+* single buffer length across filter chain
+* Signal class controls buffer length, and transports side-channel data (threshold height for example)
+* Save configs to .config file (with ConfigParser?)
 
 
-Object oriented
-Channel -> device class
-single buffer length across
+
+GUI quirks:
+* Start/Stop/Rewind functionality (automatic looping)
