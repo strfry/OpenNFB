@@ -88,11 +88,3 @@ def update(channels):
 
     heartbeatPlot.update('beat', hb.beat)
 
-
-
-
-
-def updateGUI():
-    rawPlot.updateGUI()
-    filteredPlot.updateGUI()
-    heartbeatPlot.updateGUI()

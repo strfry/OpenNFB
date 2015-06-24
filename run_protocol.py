@@ -9,7 +9,6 @@ from acquisition import BDFThread, OpenBCIThread
 
 import sys, imp
 
-#QtGui.QApplication.setGraphicsSystem('raster')
 app = QtGui.QApplication([])
 win = QtGui.QMainWindow()
 win.setWindowTitle("OpenNFB")
@@ -20,15 +19,17 @@ win.setWindowTitle("OpenNFB")
 # Enable antialiasing for prettier plots
 pg.setConfigOptions(antialias=True)
 
-#protocol_filename = './alpha-theta.py'
-protocol_filename = './ekg-drum.py'
+protocol_filename = './alpha-theta.py'
+#protocol_filename = 'ekg-drum.py'
 
-protocol = None
+widget = None
+
 
 def handle_reload(path):
-    global protocol
+    global protocol, widget
     protocol = imp.load_module('foo', file(protocol_filename), protocol_filename, ('.py', 'U', 1))
-    win.setCentralWidget(protocol.widget())
+    widget = protocol.widget()
+    win.setCentralWidget(widget)
     #win.show()
     print path
 
@@ -63,7 +64,10 @@ sourceThread.newPacket.connect(handlePacket)
 sourceThread.start()
 
 def updateGUI():
-    protocol.updateGUI()
+    for child in widget.children():
+        if hasattr(child, 'updateGUI'):
+            child.updateGUI()
+
 
 guiTimer = QtCore.QTimer()
 guiTimer.timeout.connect(updateGUI)

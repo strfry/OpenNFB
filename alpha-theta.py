@@ -116,10 +116,3 @@ def update(channels):
     trainingPlot.update('alpha/theta', trainingValue)
 
     setMPDVolume(trainingValue * 70)
-
-def updateGUI():
-    alphaThetaPlot.updateGUI()
-    rawPlot.updateGUI()
-    trainingPlot.updateGUI()
-
-    spectrograph.updateGUI()
