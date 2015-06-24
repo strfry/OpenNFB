@@ -4,6 +4,7 @@ import numpy as np
 from scipy.special import expit
 from transformations import FFT, GridFilter, IIRFilter
 from widgets import ScrollingPlot
+from SpectrographWidget import SpectrographWidget
 
 gridFilter = GridFilter()
 fftFilt = FFT()
@@ -23,14 +24,18 @@ alphaThetaPlot.plot('theta', pen='r')
 trainingPlot = ScrollingPlot()
 trainingPlot.plot('alpha/theta', pen='y')
 
+spectrograph = SpectrographWidget()
+
 def widget():
     w = QtGui.QWidget()
     layout = QtGui.QGridLayout()
     w.setLayout(layout)
 
-    layout.addWidget(rawPlot, 0, 2)
-    layout.addWidget(alphaThetaPlot, 1, 2)
-    layout.addWidget(trainingPlot, 2, 2)
+    layout.addWidget(rawPlot, 0, 0)
+    layout.addWidget(alphaThetaPlot, 1, 0)
+    layout.addWidget(trainingPlot, 2, 0)
+
+    layout.addWidget(spectrograph, 0, 1, 0, 3)
 
 
     return w
@@ -56,9 +61,12 @@ iir3 = IIRFilter()
 iir4 = IIRFilter()
 
 def update(channels):
+
     gridFilter.update(channels[0])
 
     iir0.update(channels[0])
+
+    spectrograph.updateValue(channels[0])
 
 
     delta = iir.band(0.5, 4)
@@ -113,3 +121,5 @@ def updateGUI():
     alphaThetaPlot.updateGUI()
     rawPlot.updateGUI()
     trainingPlot.updateGUI()
+
+    spectrograph.updateGUI()
