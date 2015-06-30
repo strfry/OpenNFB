@@ -1,14 +1,36 @@
+Towards Domain Specific Language:
+
+1) Implement Block class
+2) connect() functionality
+3) Threshold block with widget
+4) OpenBCI device with source blocks/ports
+
+
+
 BUGS:
-* OpenBCI link becomes unreliable sometimes
+* (OpenBCI link becomes unreliable sometimes) not seen anymore -> Detect link problems and implement automatic restarting
 
 TODO:
 * Make a simple threshold widget
-* Clean up band filter code
-* Spectrogram
-* Look into GNURadio
-* Take a look at OSC (pyosc)
-* Simple plot setup and filter bands
-* Use WAV files everywhere
+* Make a Block class, containing InPort's and OutPort's
+	connect ports with connect() like external syntax
+	InPorts require buffer lengths, OutPorts do the buffering?
+	Give blocks a name, so they can store their config in a separate file in Python object notation
+	Support for meta-data, like thresholds, signal name etc.
+* Look into GNURadio, especially the processing and sample forwarding architecture
+
+
+Instrument Control
+* Generate MIDI events, control volume, pitch, other filters...
+* Take a look at OSC (pyosc) - done, better use MIDI for ableton
+
+
+Recording Features
+* GUI Frame with notion of a "session", and record/playback functionality
+* Start/Stop/Pause and maybe looping
+* Freely usable WAV file record and playback blocks
+* Buffer reset/refill feature
+* Support for seeking
 
 Live Coding:
 * Use reload(), del dependencies from sys.modules
@@ -18,22 +40,11 @@ DSP:
 
 Widgets:
 * Scrolling Plot / Oscillosope
-* Spectrogram (based on Multiple Plots benchmark example)
 * Fire animation
 
 Hardware:
 * Light & Sound Box
 
 
-DSL Features:
-
-* Object oriented
-* Channel -> device class
-* single buffer length across filter chain
-* Signal class controls buffer length, and transports side-channel data (threshold height for example)
-* Save configs to .config file (with ConfigParser?)
 
 
-
-GUI quirks:
-* Start/Stop/Rewind functionality (automatic looping)
