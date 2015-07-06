@@ -1,7 +1,7 @@
 Towards Domain Specific Language:
 
-1) Implement Block class
-2) connect() functionality
+1) Build a simple test bench for Context
+2) Implement Block class
 3) Threshold block with widget
 4) OpenBCI device with source blocks/ports
 
