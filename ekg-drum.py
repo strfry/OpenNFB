@@ -1,45 +1,34 @@
-from PySide import QtCore, QtGui
-import pyqtgraph as pg
-import numpy as np
-from scipy.special import expit
-from transformations import FFT, GridFilter, IIRFilter
-from widgets import ScrollingPlot
-from SpectrographWidget import SpectrographWidget
+class NullBlock(Block):
+    output = Output()
 
-RawEKG = context.get_channel('Channel 1', color='red', label='Raw with 50/60 Hz Noise')
-
-RAWOSCI = Oscilloscope('Raw Signal', channels=[RawEKG])
-RAWOSC1.autoscale(True)
-
-gridFilter = BandPass(1, 25, input=RawEKG)
-EKG = gridFilter.output
-EKG.color = 'green'
-
-RAWOSC1.channel[1] = EKG
-
-fftFilt = Spectrograph('Spectrogram', mode='waterfall')
-fftFilt.freq_range = gridFilter.range
-fftFilt.label = 'Frequency Spectrum'
-
-
-#filteredPlot = ScrollingPlot()
-#filteredPlot.plot('ac', pen='r')
-#filteredPlot.plot('abs', pen='g')
-
-class HeartAnalyser(Block):
     def init(self):
         self.create_input('input')
 
-
-
-
-
     def process(self):
+        beat.append(self.input.new)
 
 
+import numpy as np
+
+class HeartAnalyser(Block):
+    def init(self):
+        self.create_input('input', buffer=250)
+
+    beat = Output('Beat Event')
 
 
-heart = HeartAnalyzer(input=Fz1)
+    def process(self):       
+        square = self.input.data ** 2
+
+        threshold = np.percentile(square, 98)
+
+        if np.max(self.input.new) > threshold:
+            beat.append([1.0])
+        else:
+            beat.append([0.0])
+
+        #TODO: implement holdoff time
+
 
 class MIDIDrum(Block):
     def init(self, port):
@@ -57,73 +46,48 @@ class MIDIDrum(Block):
             self.midi.send_note(0, pitch, vel)
 
 
-BPM = TextBox('BPM', label='Heartbeats per minute')
-BPM.input = heart.bpm
 
-drum = MIDIDrum(0)
-drum.trigger = heart.beat
+class EKGDrumFlow(Flow):
+    
+    def init(self, context):
+        RawEKG = context.get_channel('Channel 1', color='red', label='Raw with 50/60 Hz Noise')
 
-def widget():
-    w = QtGui.QWidget()
-    layout = QtGui.QGridLayout()
-    w.setLayout(layout)
+        RAWOSCI = Oscilloscope('Raw Signal', channels=[RawEKG])
+        RAWOSC1.autoscale(True)
 
-    layout.addWidget(RAWOSC1, 0, 0)
-    layout.addWidget(, 1, 0)
-    layout.addWidget(heartbeatPlot, 3, 0)
+        gridFilter = BandPass(1, 25, input=RawEKG)
+        EKG = gridFilter.output
+        EKG.color = 'green'
 
-    return w
+        RAWOSC1.channel[1] = EKG
 
-class Heartbeat(object):
-    def __init__(self, window=500):
-        self.out = 0
-        self.buffer = np.zeros(window)
-        self.threshold = 0.0
-        self.lastBeat = 0
+        fftFilt = Spectrograph('Spectrogram', mode='waterfall')
+        fftFilt.freq_range = gridFilter.range
+        fftFilt.label = 'Frequency Spectrum'
 
-        self.sound = QtGui.QSound('drum.wav')
+        heart = HeartAnalyzer(input=EKG)
 
-        self.midi_out = rtmidi2.MidiOut()
-        # open the first available port
-        self.midi_out.open_port(0)
-        # send C3 with vel. 100 on channel 1
+        BPM = TextBox('BPM', label='Heartbeats per minute')
+        BPM.input = heart.bpm
+
+        drum = MIDIDrum(0)
+        drum.trigger = heart.beat
+
+
+        self.RAWOSC1 = RAWOSC1
+        self.fftFilt = fftFilt
+
+
+    def widget(self):
+        w = QtGui.QWidget()
+        layout = QtGui.QGridLayout()
+        w.setLayout(layout)
+
+        layout.addWidget(self.RAWOSC1, 0, 0)
+        layout.addWidget(self.fftFilt, 2, 0)
+
+        return w
+
+
+    def process(self):
         pass
-
-    def process(self, newValue):
-        self.buffer[:-1] = self.buffer[1:]
-        self.buffer[-1] = newValue
-
-        self.threshold = np.percentile(self.buffer, 98)
-
-        beat = 10000.0 if newValue > self.threshold else 0.0
-
-        self.lastBeat += 1
-
-        if beat > 0 and self.lastBeat > 50:
-            self.lastBeat = 0
-            self.beat = 10000.0
-            #self.sound.play()
-            print "beat event"
-            self.midi_out.send_noteon(0, 48, 100)
-        else:
-            self.beat = 0.0
-
-
-
-hb = Heartbeat()
-
-def update(channels):
-    rawPlot.update('raw', channels[0])
-
-    gridFilter.update(channels[0])
-
-    filteredPlot.update('ac', gridFilter.ac)
-    filteredPlot.update('abs', abs(gridFilter.ac))
-
-    hb.process(abs(gridFilter.ac))
-    heartbeatPlot.update('ekg', hb.buffer[-1])
-    heartbeatPlot.update('percentile', hb.threshold)
-
-
-    heartbeatPlot.update('beat', hb.beat)
-
