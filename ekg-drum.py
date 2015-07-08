@@ -6,34 +6,73 @@ from transformations import FFT, GridFilter, IIRFilter
 from widgets import ScrollingPlot
 from SpectrographWidget import SpectrographWidget
 
-gridFilter = GridFilter()
-fftFilt = FFT()
-rawPlot = ScrollingPlot(1000)
+RawEKG = context.get_channel('Channel 1', color='red', label='Raw with 50/60 Hz Noise')
 
-rawPlot.plot('raw', pen=QtGui.QColor('red'))
+RAWOSCI = Oscilloscope('Raw Signal', channels=[RawEKG])
+RAWOSC1.autoscale(True)
 
-filteredPlot = ScrollingPlot()
-filteredPlot.plot('ac', pen='r')
-filteredPlot.plot('abs', pen='g')
+gridFilter = BandPass(1, 25, input=RawEKG)
+EKG = gridFilter.output
+EKG.color = 'green'
 
-heartbeatPlot = ScrollingPlot()
-heartbeatPlot.plot('ekg', pen=QtGui.QColor('green'))
-heartbeatPlot.plot('percentile', pen=QtGui.QColor('violet'))
-heartbeatPlot.plot('beat', pen=QtGui.QColor('red'))
+RAWOSC1.channel[1] = EKG
 
+fftFilt = Spectrograph('Spectrogram', mode='waterfall')
+fftFilt.freq_range = gridFilter.range
+fftFilt.label = 'Frequency Spectrum'
+
+
+#filteredPlot = ScrollingPlot()
+#filteredPlot.plot('ac', pen='r')
+#filteredPlot.plot('abs', pen='g')
+
+class HeartAnalyser(Block):
+    def init(self):
+        self.create_input('input')
+
+
+
+
+
+    def process(self):
+
+
+
+
+heart = HeartAnalyzer(input=Fz1)
+
+class MIDIDrum(Block):
+    def init(self, port):
+        import rtmidi2.MidiOut as MidiOut
+        self.midi = MidiOut(0)
+
+        self.create_input('pitch', default=440)
+        self.create_input('velocity', default=1.0)
+        self.create_input('trigger')
+
+    def process(self):
+        if self.trigger.posedge:
+            pitch = self.pitch.value
+            vel = self.velocity.value
+            self.midi.send_note(0, pitch, vel)
+
+
+BPM = TextBox('BPM', label='Heartbeats per minute')
+BPM.input = heart.bpm
+
+drum = MIDIDrum(0)
+drum.trigger = heart.beat
 
 def widget():
     w = QtGui.QWidget()
     layout = QtGui.QGridLayout()
     w.setLayout(layout)
 
-    layout.addWidget(rawPlot, 0, 0)
-    layout.addWidget(filteredPlot, 1, 0)
+    layout.addWidget(RAWOSC1, 0, 0)
+    layout.addWidget(, 1, 0)
     layout.addWidget(heartbeatPlot, 3, 0)
 
     return w
-
-import rtmidi2
 
 class Heartbeat(object):
     def __init__(self, window=500):

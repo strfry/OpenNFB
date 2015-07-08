@@ -11,7 +11,7 @@ class SpectrogramWidget(pg.PlotWidget):
         self.img = pg.ImageItem()
         self.addItem(self.img)
 
-        self.img_array = np.zeros((1000, (blockSize/2)+1))
+        self.img_array = np.zeros((100, (blockSize/2)+1))
 
         # bipolar colormap
         pos = np.array([0., 1., 0.5, 0.25, 0.75])
@@ -33,13 +33,14 @@ class SpectrogramWidget(pg.PlotWidget):
 
         self.buffer = np.zeros(blockSize)
 
-    def update(self, chunk):
+    def updateValue(self, chunk):
         self.buffer = np.roll(self.buffer, -1)
         self.buffer[-1] = chunk
 
+    def updateGUI(self):
         # normalized, windowed frequencies in data chunk
-        #spec = np.fft.rfft(self.buffer*self.win) / self.blockSize
-        spec = self.buffer[:self.blockSize / 2 + 1]
+        spec = np.fft.rfft(self.buffer*self.win) / self.blockSize
+        #spec = self.buffer[:self.blockSize / 2 + 1]
         # get magnitude 
         psd = abs(spec)
         # convert to dB scale

@@ -19,8 +19,9 @@ win.setWindowTitle("OpenNFB")
 # Enable antialiasing for prettier plots
 pg.setConfigOptions(antialias=True)
 
-protocol_filename = './alpha-theta.py'
-#protocol_filename = 'ekg-drum.py'
+#protocol_filename = './alpha-theta.py'
+protocol_filename = 'ekg-drum.py'
+protocol_filename = '30hzfinder.py'
 
 widget = None
 
