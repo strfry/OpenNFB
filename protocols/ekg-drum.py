@@ -1,8 +1,10 @@
+from flow import Block, Signal, Flow
+
 class NullBlock(Block):
-    output = Output()
+    output = Signal()
 
     def init(self):
-        self.create_input('input')
+        self.define_input('input')
 
     def process(self):
         beat.append(self.input.new)
@@ -14,7 +16,7 @@ class HeartAnalyser(Block):
     def init(self):
         self.create_input('input', buffer=250)
 
-    beat = Output('Beat Event')
+    beat = Signal('Beat Event')
 
 
     def process(self):       
