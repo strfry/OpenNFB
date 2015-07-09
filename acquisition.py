@@ -45,3 +45,8 @@ class BDFThread(QtCore.QThread):
     timer.start(1000 / 250)
 
     self.exec_()
+
+
+def Device(object):
+    def __init__(self, driver='OpenBCI', ):
+        pass
