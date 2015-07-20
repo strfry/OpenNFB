@@ -1,3 +1,3 @@
 import importlib
 
-__module__.setattr('ekg-drum', importlib.import_module('ekg-drum'))
+globals()['ekg-drum'] = importlib.import_module('protocols.ekg-drum')

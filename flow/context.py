@@ -1,6 +1,11 @@
 class Context(object):
+    instance = None
+
     def __init__(self):
-        print instance
+        if self.instance:
+            print 'Warning: Context instantiated more than once'
+
+        self.instance = self
 
     # TODO: Singleton
 
@@ -18,3 +23,6 @@ class Context(object):
 
     def process(self):
         self.flow.process()
+
+    def get_channel(self, name, **config):
+        print 'get_channel', name

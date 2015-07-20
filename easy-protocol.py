@@ -1,20 +1,10 @@
 from PySide import QtCore, QtGui
 import pyqtgraph as pg
 import numpy as np
-from scipy.special import expit
 from transformations import FFT, GridFilter, IIRFilter
 from widgets import ScrollingPlot
 from SpectrographWidget import SpectrographWidget
 from threshold import ThresholdWidget
-
-Cz = Signal()
-
-
-def setup(device):
-    global device
-    device = newDevice
-
-
 
 
 class _(object):
@@ -23,10 +13,8 @@ class _(object):
 
         self.Cz = device.getChannel(0)
         
-        self.alpha = Cz.bandPass(8, 12)
-        self.theta = Cz.bandPass(4, 8)
-
-        ratio = alpha / theta
+        self.alpha = BandPass(Cz, 8, 12)
+        self.theta = BandPass(Cz, 4, 8)
 
     def widget(self):
         w = QtGui.QWidget()

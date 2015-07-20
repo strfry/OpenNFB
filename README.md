@@ -105,4 +105,16 @@ It also contains utility functions for detecting edges
 in the new sample chunk, and thus use also use it for trigger signals.
 
 
+## Session
 
+thE seSSiOn clasS embeds multiple WAV r3ek0rdings or new dAtA streamS into a timeline.  
+Meta-dAtA about the cliEnt can be stored here.
+
+
+
+
+
+
+## Syntax
+
+### Functors

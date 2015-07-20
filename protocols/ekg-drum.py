@@ -1,4 +1,6 @@
-from flow import Block, Signal, Flow
+from pyqtgraph.Qt import QtGui, QtCore
+from flow import Block, Signal, Flow, BandPass
+from flow import Spectrograph, Oscilloscope, TextBox
 
 class NullBlock(Block):
     output = Signal()
@@ -12,11 +14,12 @@ class NullBlock(Block):
 
 import numpy as np
 
-class HeartAnalyser(Block):
+class HeartAnalyzer(Block):
     def init(self):
         self.create_input('input', buffer=250)
 
     beat = Signal('Beat Event')
+    bpm = Signal("Beats per Minute")
 
 
     def process(self):       
@@ -33,13 +36,14 @@ class HeartAnalyser(Block):
 
 
 class MIDIDrum(Block):
-    def init(self, port):
+    def init(self, port=0):
         import rtmidi2.MidiOut as MidiOut
-        self.midi = MidiOut(0)
+        self.midi = MidiOut(port)
 
         self.create_input('pitch', default=440)
         self.create_input('velocity', default=1.0)
         self.create_input('trigger')
+
 
     def process(self):
         if self.trigger.posedge:
@@ -54,8 +58,8 @@ class EKGDrumFlow(Flow):
     def init(self, context):
         RawEKG = context.get_channel('Channel 1', color='red', label='Raw with 50/60 Hz Noise')
 
-        RAWOSCI = Oscilloscope('Raw Signal', channels=[RawEKG])
-        RAWOSC1.autoscale(True)
+        RAWOSC1 = Oscilloscope('Raw Signal', channels=[RawEKG])
+        RAWOSC1.autoscale = True
 
         gridFilter = BandPass(1, 25, input=RawEKG)
         EKG = gridFilter.output
@@ -72,7 +76,7 @@ class EKGDrumFlow(Flow):
         BPM = TextBox('BPM', label='Heartbeats per minute')
         BPM.input = heart.bpm
 
-        drum = MIDIDrum(0)
+        drum = MIDIDrum(port=0)
         drum.trigger = heart.beat
 
 
@@ -85,11 +89,14 @@ class EKGDrumFlow(Flow):
         layout = QtGui.QGridLayout()
         w.setLayout(layout)
 
-        layout.addWidget(self.RAWOSC1, 0, 0)
-        layout.addWidget(self.fftFilt, 2, 0)
+        layout.addWidget(self.RAWOSC1.widget(), 0, 0)
+        layout.addWidget(self.fftFilt.widget(), 2, 0)
 
         return w
 
 
     def process(self):
         pass
+
+def flow():
+    return EKGDrumFlow()

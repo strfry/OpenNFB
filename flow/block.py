@@ -1,16 +1,35 @@
+class Input(object):
+    def __init__(self, block, name):
+        self.name = name 
+        self.block = block
+        self.source = None
+
+    def assign_source(self, output):
+        if self.source:
+            self.source.disconnect(self)
+
+        output.connect(self.block)
+        self.source = output
+        pass
+
+
 class Block(object):
-    def __init__(self, **configs):
+    def __init__(self, **config):
+        self._inputs = {}
+
         pass
 
     def define_input(self, name):
+        self._inputs[name] = Input(self, name)
         pass
 
-    def __getattr__(self, attr):
-        print 'getattr', value, __dict__[attr]
-        return __dict__[attr]
+    def define_input_array(self, name, num):
+        self._inputs[name] = Input(self, name)
+        pass
 
-    def __setattr__(self, attr, value):
-        print '__setattr__', attr, value
+    def define_config(self, name, default):
+        self.__setattr__(name, default)
+
 
 class Flow(Block):
     pass

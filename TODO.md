@@ -1,9 +1,24 @@
 Towards Domain Specific Language:
 
-1) Build a simple test bench for Context
-2) Implement Block class
-3) Threshold block with widget
-4) OpenBCI device with source blocks/ports
+*) Latency Measuring Test Case
+*) Block class as Functor(was: Implement Block class)
+*) Threshold block with widget
+
+
+## OpenBCI device
+
+* Uses no openbci.org code
+* Automatic restarts
+* Sync Unit (timestamps)
+* Latency correction
+
+
+### Custom Firmware
+
+* 30 Hz Aliasing bug
+* Customize Sampling Rate (fewer channels)
+* DSP on site (STM32)
+* Grow Light pulsing
 
 
 Design Decisions:
