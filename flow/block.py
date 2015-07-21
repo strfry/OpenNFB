@@ -1,35 +1,39 @@
-class Input(object):
-    def __init__(self, block, name):
-        self.name = name 
-        self.block = block
-        self.source = None
+from signal import Signal
+from traits.api import HasTraits, Instance
 
-    def assign_source(self, output):
-        if self.source:
-            self.source.disconnect(self)
-
-        output.connect(self.block)
-        self.source = output
-        pass
+class Input(Instance):
+    def __init__(self):
+        super(Input, self).__init__(Signal, input=True)
 
 
-class Block(object):
+
+class Block(HasTraits):
     def __init__(self, **config):
-        self._inputs = {}
+        # Register for trait events with the metadata 'input', our Input trait
+        self.on_trait_event(self._input_trait_handler, '+input')
 
-        pass
+        self.inputs = set()
 
-    def define_input(self, name):
-        self._inputs[name] = Input(self, name)
-        pass
+        super(Block, self).__init__(**config)
 
-    def define_input_array(self, name, num):
-        self._inputs[name] = Input(self, name)
-        pass
-
-    def define_config(self, name, default):
-        self.__setattr__(name, default)
+        self.last_timestamp = -1
 
 
-class Flow(Block):
-    pass
+
+    def _input_trait_handler(self, object, name, old, new):
+        if old:
+            old._disconnect(self)
+            self.inputs.remove(old)
+
+        new._connect(self)
+        self.inputs.add(new)
+
+    def _signal_ready(self, signal):
+        if signal.timestamp > self.last_timestamp:
+            self.ready_inputs = set([signal])
+            self.last_timestamp = signal.timestamp
+        else:
+            self.ready_inputs.add(signal)
+
+        if self.ready_inputs == self.inputs:
+            self.process()

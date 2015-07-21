@@ -1,19 +1,34 @@
-from flow import Block
-from flow.block import Input
+from flow import Block, Signal, Input
 
 from PySide import QtGui
+from pyqtgraph import PlotWidget
+
+from traits.api import Bool, Instance
 
 class Oscilloscope(Block):
+
+	autoscale = Bool(False)
+	channel0 = Input()
+	channel1 = Input()
+
 	def __init__(self, name, **config):
 		super(Oscilloscope, self).__init__(**config)
-		#self.define_input_array('channel', 4)
 
-		self.channel = [Input(self, 'Channel %i' % x) for x in range(4)]
+		self._plot_widget = PlotWidget()
+		self._plot_widget.block = self
 
-		self.define_config('autoscale', False)
+		self.plot = self._plot_widget.plot()
+
 
 	def widget(self):
-		return QtGui.QWidget()
+		return self._plot_widget
+
+	def updateGUI(self):
+		self.plot.setData(self.channel0.buffer)
+		pass
+
+	def process(self):
+		pass
 
 class Spectrograph(Block):
 	def __init__(self, name, **config):

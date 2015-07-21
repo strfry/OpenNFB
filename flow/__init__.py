@@ -1,4 +1,4 @@
-from block import Block, Flow
+from block import Block, Input
 from signal import Signal
 
 from context import Context
