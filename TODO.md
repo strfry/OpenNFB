@@ -1,10 +1,12 @@
 ## Traits semantics
 
 * Disallow assignment of undeclared traits
-
+* Input trait for non-signal stuff, default value
 
 ## Towards Domain Specific Language:
 
+*) Think thoroughly about semantics of Signal
+	- Sample rate, nyquist
 *) Latency Measuring Test Case
 *) Threshold block with widget
 

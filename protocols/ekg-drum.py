@@ -41,9 +41,13 @@ class MIDIDrum(Block):
 
     def process(self):
         if self.trigger.posedge:
-            pitch = self.pitch.value
-            vel = self.velocity.value
-            self.midi.send_note(channel, pitch, vel)
+            pitch = self.pitch
+            vel = self.velocity
+            if not pitch:
+                pitch = 100
+            if not vel:
+                vel = 1.0
+            self.midi.send_noteon(self.channel, pitch, vel)
 
 class EKGDrumFlow(object):
     

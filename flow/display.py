@@ -21,14 +21,6 @@ class Oscilloscope(Block):
 
 	@on_trait_change('channels[]')
 	def channels_changed(self, object, name, old, new):
-		if name == 'channels':
-			print 'whole list changed'
-
-		elif name == 'channels_items':
-			print 'items changed', old, new
-		else:
-			print 'unknown case'
-
 		for channel in old:
 			del self.plots[channel]
 		for channel in new:

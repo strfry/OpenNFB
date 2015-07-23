@@ -5,8 +5,10 @@ class Signal(HasTraits):
 	color = Color()
 	label = Str()
 
-	def __init__(self, label=None, **config):
+	def __init__(self, label='', **config):
 		super(Signal, self).__init__(**config)
+
+		self.label = label
 
 		latency = 0
 		self.connections = set()
