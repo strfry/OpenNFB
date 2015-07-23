@@ -1,55 +1,49 @@
 from pyqtgraph.Qt import QtGui, QtCore
-from flow import Block, Signal, BandPass
+from flow import Block, Signal, Input, BandPass
 from flow import Spectrograph, Oscilloscope, TextBox
-
-class NullBlock(Block):
-    output = Signal()
-
-    def init(self):
-        self.define_input('input')
-
-    def process(self):
-        beat.append(self.input.new)
-
 
 import numpy as np
 
-class HeartAnalyzer(Block):
-    def init(self):
-        self.create_input('input', buffer=250)
 
-    beat = Signal('Beat Event')
-    bpm = Signal("Beats per Minute")
+class HeartAnalyzer(Block):
+    input = Input()
+
+    def init(self):
+        self.beat = Signal('Beat Event')
+        self.bpm = Signal("Beats per Minute")
 
 
     def process(self):       
-        square = self.input.data ** 2
+        square = np.array(self.input.buffer) ** 2
 
         threshold = np.percentile(square, 98)
 
-        if np.max(self.input.new) > threshold:
-            beat.append([1.0])
+        if np.max(self.input.buffer[:self.input.new_samples]) > threshold:
+            self.beat.append([1.0])
+            print 'beat event'
         else:
-            beat.append([0.0])
+            self.beat.append([0.0])
+
+        self.beat.process()
 
         #TODO: implement holdoff time
 
 
 class MIDIDrum(Block):
-    def init(self, port=0):
-        import rtmidi2.MidiOut as MidiOut
-        self.midi = MidiOut(port)
+    pitch = Input(default=440)
+    velocity = Input(default=1.0)
+    trigger = Input()
 
-        self.create_input('pitch', default=440)
-        self.create_input('velocity', default=1.0)
-        self.create_input('trigger')
-
+    def init(self, channel=0, port_name='drum'):
+        from rtmidi2 import MidiOut
+        self.channel = channel
+        self.midi = MidiOut().open_virtual_port(port_name)
 
     def process(self):
         if self.trigger.posedge:
             pitch = self.pitch.value
             vel = self.velocity.value
-            self.midi.send_note(0, pitch, vel)
+            self.midi.send_note(channel, pitch, vel)
 
 class EKGDrumFlow(object):
     
@@ -57,7 +51,7 @@ class EKGDrumFlow(object):
         RawEKG = context.get_channel('Channel 1', color='red', label='Raw with 50/60 Hz Noise')
 
         print 'RawEKG', RawEKG
-        RAWOSC1 = Oscilloscope('Raw Signal', channel0=RawEKG)
+        RAWOSC1 = Oscilloscope('Raw Signal', channels=[RawEKG])
         RAWOSC1.autoscale = True
 
 
@@ -65,7 +59,10 @@ class EKGDrumFlow(object):
         EKG = gridFilter.output
         EKG.color = 'green'
 
-        RAWOSC1.channel1 = EKG
+        RAWOSC1.channels.append(EKG)
+        RAWOSC1.channels.remove(RawEKG)
+        #RAWOSC1.channels.append(RawEKG)
+
 
         fftFilt = Spectrograph('Spectrogram', mode='waterfall')
         fftFilt.freq_range = gridFilter.range

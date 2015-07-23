@@ -1,8 +1,14 @@
+import numpy as np
+from traits.api import HasTraits, Color, Str
 
-class Signal(object):
-	def __init__(self, label=None):
+class Signal(HasTraits):
+	color = Color()
+	label = Str()
+
+	def __init__(self, label=None, **config):
+		super(Signal, self).__init__(**config)
+
 		latency = 0
-		self.label = label
 		self.connections = set()
 
 		self.buffer = [0] * 256
@@ -19,7 +25,7 @@ class Signal(object):
 	def _disconnect(self, block):
 		self.connections.remove(block)
 
-	def append_data(self, data):
+	def append(self, data):
 		size = len(self.buffer)
 		data = list(data)
 		data.reverse()
@@ -34,3 +40,14 @@ class Signal(object):
 	def process(self):
 		for c in self.connections:
 			c._signal_ready(self)
+
+
+	@property
+	def posedge(self):
+		new = self.buffer[: self.new_samples + 1]
+		new = np.array(new) >= 1.0
+
+		argmax = np.argmax(new[:-1])
+		if new[argmax] and not new[argmax + 1]:
+			return True
+		return False

@@ -1,31 +1,52 @@
+
 from flow import Block, Signal, Input
 
 from PySide import QtGui
 from pyqtgraph import PlotWidget
 
-from traits.api import Bool, Instance
+from traits.api import Bool, List, on_trait_change
 
 class Oscilloscope(Block):
 
 	autoscale = Bool(False)
-	channel0 = Input()
-	channel1 = Input()
+	channels = List(Input())
 
 	def __init__(self, name, **config):
-		super(Oscilloscope, self).__init__(**config)
-
 		self._plot_widget = PlotWidget()
 		self._plot_widget.block = self
 
-		self.plot = self._plot_widget.plot()
+		self.plots = {}
+
+		super(Oscilloscope, self).__init__(**config)
+
+	@on_trait_change('channels[]')
+	def channels_changed(self, object, name, old, new):
+		if name == 'channels':
+			print 'whole list changed'
+
+		elif name == 'channels_items':
+			print 'items changed', old, new
+		else:
+			print 'unknown case'
+
+		for channel in old:
+			del self.plots[channel]
+		for channel in new:
+			plot = self._plot_widget.plot()
+
+			color = QtGui.qRgb(*channel.color)
+			plot.setPen(QtGui.QColor(color))
+
+			self.plots[channel] = plot
 
 
 	def widget(self):
 		return self._plot_widget
 
 	def updateGUI(self):
-		self.plot.setData(self.channel0.buffer)
-		pass
+		for channel in self.plots:
+			plot = self.plots[channel]
+			plot.setData(channel.buffer)
 
 	def process(self):
 		pass

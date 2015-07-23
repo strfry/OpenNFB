@@ -11,5 +11,5 @@ class BandPass(Block):
 		self.range = (lo, hi)
 
 	def process(self):
-		self.output.append_data([0])
+		self.output.append([0])
 		self.output.process()

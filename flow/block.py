@@ -2,8 +2,10 @@ from signal import Signal
 from traits.api import HasTraits, Instance
 
 class Input(Instance):
-    def __init__(self):
+    def __init__(self, default=None):
         super(Input, self).__init__(Signal, input=True)
+
+        self.default = default
 
 
 
@@ -17,7 +19,9 @@ class Block(HasTraits):
         super(Block, self).__init__(**config)
 
         self.last_timestamp = -1
-
+        
+        if hasattr(self, 'init'):
+            self.init()
 
 
     def _input_trait_handler(self, object, name, old, new):

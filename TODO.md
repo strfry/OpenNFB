@@ -1,7 +1,11 @@
-Towards Domain Specific Language:
+## Traits semantics
+
+* Disallow assignment of undeclared traits
+
+
+## Towards Domain Specific Language:
 
 *) Latency Measuring Test Case
-*) Block class as Functor(was: Implement Block class)
 *) Threshold block with widget
 
 
@@ -23,6 +27,7 @@ Towards Domain Specific Language:
 
 Design Decisions:
 
+- Trigger processing from input or output (currently input)
 - OutputPort's are buffering stuff themselves, as requested by InputPort's on connection
 
 - Source Blocks (Channels) can be requested through the Context
@@ -42,13 +47,8 @@ BUGS:
 TODO:
 * Limit Error message (and trace() feature)
 * Make a simple threshold widget
-* Make a Block class, containing InPort's and OutPort's
-	connect ports with connect() like external syntax
-	InPorts require buffer lengths, OutPorts do the buffering?
-	Give blocks a name, so they can store their config in a separate file in Python object notation
-	Support for meta-data, like thresholds, signal name etc.
-* Look into GNURadio, especially the processing and sample forwarding architecture
-
+* Buffer length request feature for Input() port
+* Give blocks a name, so they can store their config in a separate file in Python object notation
 
 Instrument Control
 * Generate MIDI events, control volume, pitch, other filters...
@@ -63,13 +63,13 @@ Recording Features
 * Support for seeking
 * Spectrogram widget
 * Spectrogram (bar mode)
-* Look into GNURadio
 * Simple plot setup and filter bands
 * Use WAV files everywhere
 *
 
 Live Coding:
 * Use reload(), del dependencies from sys.modules
+* Look for suitable plugin frameworks
 
 DSP:
 * Wavelet transforms for ECG analysis
@@ -89,7 +89,7 @@ Blocks:
 * Source 
 	- Wraps OpenBCI and WAV replay (Extra class/instance option for explicit replays)
 * (Random Noise)
-
+* Think of a way to register 'virtual' sources to Context
 
 Transform:
 
@@ -104,21 +104,17 @@ Output:
 * Oscilloscope
 * Spectral analyzer
 
-
-
-* Object oriented
-* Channel -> device class
-* single buffer length across filter chain
+* single buffer across filter chain (an idea from pyo, allow in-place processing)
 * Signal class:
 	- Controls buffer length
 	- Transports side channel data (for example Threshold)
-	- Can transport transforms?
-	- update mechanisms
-	- decide: static or dynamic per-sample processing?
-		static:
-			- need to overload all kinds of operations (maybe derive from np.array?)
-		dynamic:
+	- Can transport transforms (frequency domain)?
 
 
 
 * Save configs to .config file (with ConfigParser?)
+
+
+Rewriting or patching the OpenBCI firmware is on my agenda for 2 reasons:
+1) There is this bug, which sometimes introduces an aliasing artefact at 30 Hz, much like the 50 Hz mainline noise. This is probably a misconfiguration of the ADS1299, maybe the wrong low pass filter at the input stage is selected.
+2) I want to optionally use higher sample rates than 250 Hz (the ADS1299 supports up to 16 kHz). This might be possible by deactivating some channels, to get everything through the rate limited Bluetooth line. Higher sample rates are interesting for examining lambda waves (above gamma, starting from 150 Hz), and EMG analysis, where signals up to 1 kHz are told to be found.

@@ -26,7 +26,7 @@ class Context(object):
         self.input_channels[channel_name] = Signal(label=channel_name)
 
     def append_channel_data(self, channel_name, data):
-        self.input_channels[channel_name].append_data(data)
+        self.input_channels[channel_name].append(data)
         pass
 
     def process(self):
