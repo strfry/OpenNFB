@@ -2,14 +2,20 @@
 
 * Disallow assignment of undeclared traits
 * Input trait for non-signal stuff, default value
+* constructor arguments, automatable? (for using init())
 
 ## Towards Domain Specific Language:
 
 *) Think thoroughly about semantics of Signal
 	- Sample rate, nyquist
+	- Problem field of 'shadow' signals, that have same content but different metadata
+	- combine append/process
+
+*) Control flow, from input or output? (currently input)
+	Look at pyo, visitor pattern
 *) Latency Measuring Test Case
 *) Threshold block with widget
-
+*) Module structure, naming
 
 ## OpenBCI device
 
@@ -29,7 +35,6 @@
 
 Design Decisions:
 
-- Trigger processing from input or output (currently input)
 - OutputPort's are buffering stuff themselves, as requested by InputPort's on connection
 
 - Source Blocks (Channels) can be requested through the Context

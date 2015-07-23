@@ -38,6 +38,8 @@ class Context(object):
         pass
 
     def get_channel(self, name, **config):
-        print 'get_channel', self.input_channels[name]
-        # TODO: Make a copy and apply config
+        channel = self.input_channels[name]
+        # TODO: Make a copy, do not overwrite config
+        channel.trait_set(**config)
+        
         return self.input_channels[name]

@@ -1,5 +1,5 @@
 from pyqtgraph.Qt import QtGui, QtCore
-from flow import Block, Signal, Input, BandPass
+from flow import Block, Signal, Input, BandPass, DCBlock
 from flow import Spectrograph, Oscilloscope, TextBox
 
 import numpy as np
@@ -54,19 +54,16 @@ class EKGDrumFlow(object):
     def init(self, context):
         RawEKG = context.get_channel('Channel 1', color='red', label='Raw with 50/60 Hz Noise')
 
-        print 'RawEKG', RawEKG
+        RawEKG = DCBlock(RawEKG).ac
+
         RAWOSC1 = Oscilloscope('Raw Signal', channels=[RawEKG])
         RAWOSC1.autoscale = True
 
-
-        gridFilter = BandPass(1, 25, input=RawEKG)
+        gridFilter = BandPass(1.0, 35.0, input=RawEKG)
         EKG = gridFilter.output
         EKG.color = 'green'
 
         RAWOSC1.channels.append(EKG)
-        RAWOSC1.channels.remove(RawEKG)
-        #RAWOSC1.channels.append(RawEKG)
-
 
         fftFilt = Spectrograph('Spectrogram', mode='waterfall')
         fftFilt.freq_range = gridFilter.range

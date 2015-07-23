@@ -11,7 +11,7 @@ class Signal(HasTraits):
 		self.label = label
 
 		latency = 0
-		self.connections = set()
+		self.connections_ = set()
 
 		self.buffer = [0] * 256
 		self.new_samples = 0
@@ -21,28 +21,29 @@ class Signal(HasTraits):
 
 	# Store a connection to connected input blocks
 	def _connect(self, block):
-		self.connections.add(block)
+		self.connections_.add(block)
 		print '_connect', self, block
 
 	def _disconnect(self, block):
-		self.connections.remove(block)
+		self.connections_.remove(block)
 
 	def append(self, data):
 		size = len(self.buffer)
-		data = list(data)
-		data.reverse()
 
-		self.buffer[len(data):] = self.buffer[:-len(data)]
-		self.buffer[:len(data)] = data
+		self.buffer[:-len(data)] = self.buffer[len(data):]
+		self.buffer[-len(data):] = data
 
 		self.new_samples = len(data)
 
 		self.timestamp += len(data)
 
 	def process(self):
-		for c in self.connections:
+		for c in self.connections_:
 			c._signal_ready(self)
 
+	@property
+	def new(self):
+		return self.buffer[-self.new_samples:]
 
 	@property
 	def posedge(self):
