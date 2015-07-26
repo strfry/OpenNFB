@@ -9,6 +9,7 @@ from acquisition import BDFThread, OpenBCIThread
 
 import sys, imp
 
+app = QtGui.QApplication([])
 
 # Enable antialiasing for prettier plots
 pg.setConfigOptions(antialias=True)
@@ -25,9 +26,6 @@ from flow import Context
 flow = protocol.flow()
 context = Context()
 context.set_flow(flow)
-
-
-app = QtGui.QApplication([])
 
 context.register_channel('Channel 1')
 
