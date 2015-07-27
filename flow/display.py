@@ -8,7 +8,7 @@ from traits.api import Bool, List, on_trait_change
 
 class Oscilloscope(Block):
 
-	autoscale = Bool(False)
+	autoscale = Bool(True)
 	channels = List(Input())
 
 	def __init__(self, name, **config):
@@ -18,6 +18,7 @@ class Oscilloscope(Block):
 		self.plots = {}
 
 		super(Oscilloscope, self).__init__(**config)
+
 
 	@on_trait_change('channels[]')
 	def channels_changed(self, object, name, old, new):
@@ -30,6 +31,9 @@ class Oscilloscope(Block):
 			plot.setPen(QtGui.QColor(color))
 
 			self.plots[channel] = plot
+
+	def _autoscale_changed(self):
+		self._plot_widget.enableAutoRange('y', self.autoscale)
 
 
 	def widget(self):
