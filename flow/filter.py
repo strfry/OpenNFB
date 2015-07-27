@@ -29,6 +29,7 @@ class BandPass(Block):
 		self.output.append(filt[-1:])
 		self.output.process()
 
+
 	@property
 	def range(self):
 		return self.lo, self.hi
@@ -51,7 +52,7 @@ class DCBlock(Block):
 
 	def process(self):
 		for x in self.input.new:
-			self.dc = self.dc * 0.995 + x * 0.005
+			self.dc = self.dc * 0.95 + x * 0.05
 
 		self.ac.append([x - self.dc for x in self.input.new])
 		self.ac.process()
