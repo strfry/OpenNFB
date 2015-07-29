@@ -38,7 +38,7 @@ This is my current setup for developing filters without the need to stick electr
 
 Test the ekg-drum flow like this:
 
-    python replay_flow.py ekg-drum recordings/ekg_strfry_23.06.15.bdf
+    python replay_flow.py protocols/ekg-drum.py recordings/ekg_strfry_23.06.15.bdf
 
 ### Live Visualization
 
