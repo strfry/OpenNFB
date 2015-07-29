@@ -27,6 +27,9 @@ class Signal(HasTraits):
 	def _disconnect(self, block):
 		self.connections_.remove(block)
 
+	def clear_connections(self):
+		self.connections_.clear()
+
 	def append(self, data):
 		size = len(self.buffer)
 

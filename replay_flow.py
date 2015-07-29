@@ -9,30 +9,24 @@ from acquisition import BDFThread, OpenBCIThread
 
 import sys, imp
 
+from flow import Context
+
+app = QtGui.QApplication(sys.argv)
+
 # Enable antialiasing for prettier plots
 pg.setConfigOptions(antialias=True)
-
 
 protocol_name = sys.argv[1]
 replay_file = sys.argv[2]
 
-import protocols
-protocol = protocols.__dict__[protocol_name]
+from protocols import ProtocolLauncher
 
-from flow import Context
-
-flow = protocol.flow()
 context = Context()
-context.set_flow(flow)
-
 context.register_channel('Channel 1')
 
-app = QtGui.QApplication([])
-
-flow.init(context)
+launcher = ProtocolLauncher(context, protocol_name)
 
 sourceThread = BDFThread(sys.argv[2])
-
 
 def handlePacket(packet):
     context.append_channel_data('Channel 1', [packet[0]])
@@ -41,8 +35,9 @@ def handlePacket(packet):
 sourceThread.newPacket.connect(handlePacket)
 sourceThread.start()
 
+
 def updateGUI():
-    for child in widget.children():
+    for child in launcher.widget.children():
         if hasattr(child, 'block'):
             child.block.updateGUI()
 
@@ -50,14 +45,9 @@ guiTimer = QtCore.QTimer()
 guiTimer.timeout.connect(updateGUI)
 guiTimer.start(0)
 
-win = QtGui.QMainWindow()
-win.setWindowTitle("OpenNFB")
-win.resize(800, 600)
-
-win.show()
-widget = flow.widget()
-win.setCentralWidget(widget)
-
+#win = QtGui.QMainWindow()
+#win.setWindowTitle("OpenNFB")
+#win.resize(800, 600)
 
 ## Start Qt event loop unless running in interactive mode or using pyside.
 if __name__ == '__main__':

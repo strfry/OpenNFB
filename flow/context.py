@@ -13,14 +13,15 @@ class Context(object):
 
     # TODO: Singleton
 
-    def set_flow(self, flow):
-        pass
-
     def _analyze_latency(self):
         pass
 
     def _replay_history(self):
         pass
+
+    def clear_signals(self):
+        for channel in self.input_channels.values():
+            channel.clear_connections()
 
     def register_channel(self, channel_name):
         self.input_channels[channel_name] = Signal(label=channel_name)
