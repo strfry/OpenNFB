@@ -13,8 +13,16 @@
 	- Problem field of 'shadow' signals, that have same content but different metadata
 	- combine append/process
 
-*) Control flow, from input or output? (currently input)
+*) Reverse Control flow, start processing from output blocks
 	Look at pyo, visitor pattern
+
+	- Enumerate all output Blocks
+		* Output blocks register at some instance (Context)
+		* Output blocks derive from a class OutputBlock
+	- Find out how much samples are to be processed
+	- Walk through the chain and process
+	- Cache results that are in path for other output blocks
+
 *) Latency Measuring Test Case
 *) Threshold block with widget
 *) Module structure, naming
@@ -71,14 +79,9 @@ Recording Features
 * Buffer reset/refill feature
 * Support for seeking
 * Spectrogram widget
-* Spectrogram (bar mode)
-* Simple plot setup and filter bands
 * Use WAV files everywhere
 *
 
-Live Coding:
-* Use reload(), del dependencies from sys.modules
-* Look for suitable plugin frameworks
 
 DSP:
 * Wavelet transforms for ECG analysis
