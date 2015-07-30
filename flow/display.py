@@ -12,7 +12,7 @@ class Oscilloscope(Block):
 	channels = List(Input())
 
 	def __init__(self, name, **config):
-		self._plot_widget = PlotWidget()
+		self._plot_widget = PlotWidget(title=name)
 		self._plot_widget.block = self
 
 		self.plots = {}
