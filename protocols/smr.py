@@ -4,6 +4,8 @@ from flow import Spectrograph, Oscilloscope, TextBox
 
 import numpy as np
 
+import pyo
+
 class Amplitude(Block):
     input = Input()
 
@@ -56,6 +58,38 @@ class Trendline(Block):
             self.output.append([avg])
             self.output.process()
 
+class BinauralBeat(Block):
+    volume = Input()
+
+    def __init__(self, **config):
+        super(BinauralBeat, self).__init__(**config)
+
+        self.server = pyo.Server(buffersize=1024).boot()
+        centerFreq = pyo.Sig(256)
+        binauralFreq = pyo.Sine(freq=0.05, add=13.5, mul=1.5)
+
+        left = pyo.Sine(freq=centerFreq - binauralFreq / 2)
+        right = pyo.Sine(freq=centerFreq + binauralFreq / 2)
+        left.out(chnl=0)
+        right.out(chnl=1)
+
+        left.mul = right.mul = 0.2
+
+
+        import thread
+        thread.start_new_thread(self.server.start, ())
+
+        self.left = left
+        self.right = right
+
+    def process(self):
+        vol = float(self.volume.buffer[-1] / 1500.0)
+        vol = min(vol, 1.0)
+        self.left.mul = self.right.mul = vol
+
+
+
+
 class SMRFlow(object):
     
     def init(self, context):
@@ -76,6 +110,9 @@ class SMRFlow(object):
 
         self.OSC4 = Oscilloscope('SMR Trendline', channels=[SMR_trend])
 
+        self.bb = BinauralBeat(volume=SMR_amplitude)
+
+
         
 
     def widget(self):
@@ -89,6 +126,7 @@ class SMRFlow(object):
         layout.addWidget(self.OSC4.widget(), 3, 0)
 
         return w
+
 
 
 def flow():
