@@ -1,9 +1,11 @@
 
 from flow import Block, Signal, Input
 
-from pyqtgraph import QtGui, PlotWidget
+from pyqtgraph import QtGui
+import pyqtgraph as pg
+import numpy as np
 
-from traits.api import Bool, List, on_trait_change
+from traits.api import Bool, List, on_trait_change, Int
 
 class Oscilloscope(Block):
 
@@ -11,7 +13,7 @@ class Oscilloscope(Block):
 	channels = List(Input())
 
 	def __init__(self, name, **config):
-		self._plot_widget = PlotWidget(title=name)
+		self._plot_widget = pg.PlotWidget(title=name)
 		self._plot_widget.block = self
 
 		self.plots = {}
@@ -35,7 +37,7 @@ class Oscilloscope(Block):
 			self.plots[channel] = plot
 
 	def _autoscale_changed(self):
-		self._plot_widget.enableAutoRange('y', self.autoscale)
+		self._plot_widget.enableAutoRange('y', 0.95 if self.autoscale else False)
 
 
 	def widget(self):
@@ -50,11 +52,62 @@ class Oscilloscope(Block):
 		pass
 
 class Spectrograph(Block):
-	def __init__(self, name, **config):
-		super(Spectrograph, self).__init__(**config)
+    CHUNKSZ = Int(256)
+    input = Input()
+        
+    def __init__(self, name, **config):
+        self.img = pg.ImageItem()
+        self.plot_widget = pg.PlotWidget(title=name)
+        self.plot_widget.block = self
 
-	def widget(self):
-		return QtGui.QWidget()
+        self.plot_widget.addItem(self.img)
+
+        self.img_array = np.zeros((1000, self.CHUNKSZ/2+1))
+
+        # bipolar colormap
+        pos = np.array([0., 1., 0.5, 0.25, 0.75])
+        color = np.array([[0,255,255,255], [255,255,0,255], [0,0,0,255], (0, 0, 255, 255), (255, 0, 0, 255)], dtype=np.ubyte)
+        cmap = pg.ColorMap(pos, color)
+        lut = cmap.getLookupTable(0.0, 1.0, 256)
+
+        self.img.setLookupTable(lut)
+        self.img.setLevels([2,5])
+
+        FS = 250
+
+        freq = np.arange((self.CHUNKSZ/2)+1)/(float(self.CHUNKSZ)/FS)
+        yscale = 1.0/(self.img_array.shape[1]/freq[-1])
+        self.img.scale((1./FS)*self.CHUNKSZ, yscale)
+
+        self.plot_widget.setLabel('left', 'Frequency', units='Hz')
+
+        self.win = np.hanning(self.CHUNKSZ)
+        #self.show()
+        super(Spectrograph, self).__init__(**config)
+		
+    def process(self):
+        # normalized, windowed frequencies in data chunk
+        spec = np.fft.rfft(self.input.buffer*self.win) / self.CHUNKSZ
+        # get magnitude 
+        psd = abs(spec)
+        # convert to dB scale
+        psd = np.log10(psd)
+        
+        self.img.setLevels([min(psd), max(psd)])
+        
+        #print (psd)
+
+        # roll down one and replace leading edge with new data
+        self.img_array = np.roll(self.img_array, -1, 0)
+        self.img_array[-1:] = psd
+
+        self.img.setImage(self.img_array, autoLevels=False)
+
+    def widget(self):
+        return self.plot_widget
+        
+    def updateGUI(self):
+        pass
 
 class TextBox(Block):
 	def __init__(self, name, **config):
