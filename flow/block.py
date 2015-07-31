@@ -1,4 +1,4 @@
-from signal import Signal
+from .signal import Signal
 from traits.api import HasTraits, Instance
 
 class Input(Instance):

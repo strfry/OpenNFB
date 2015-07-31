@@ -3,7 +3,6 @@ import numpy as np
 import pyqtgraph as pg
 import scipy.signal
 
-from PySide import QtCore
 from bdf import BDFReader, BDFWriter
 from acquisition import BDFThread, OpenBCIThread
 
