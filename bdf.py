@@ -11,7 +11,6 @@ class BDFReader(object):
     data = fileobj.read(256)
 
     # Ignore header, and assume we open our own files
-    print (data[0:8])
     assert(b"\xffBIOSEMI" == data[0:8])
 
     header_len = int(data[184:192].strip())
