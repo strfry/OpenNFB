@@ -5,7 +5,7 @@ class Context(object):
 
     def __init__(self):
         if self.instance:
-            print 'Warning: Context instantiated more than once'
+            print('Warning: Context instantiated more than once')
 
         self.instance = self
 

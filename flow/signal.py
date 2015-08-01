@@ -24,7 +24,6 @@ class Signal(HasTraits):
 	# Store a connection to connected input blocks
 	def _connect(self, block):
 		self.connections_.add(block)
-		print '_connect', self, block
 
 	def _disconnect(self, block):
 		self.connections_.remove(block)

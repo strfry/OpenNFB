@@ -112,8 +112,7 @@ class SMRFlow(object):
 
         self.bb = BinauralBeat(volume=SMR_amplitude)
 
-
-        
+        self.Spec = Spectrograph('Cz Spectrogram', input=BandPass(0.1, 30.0, input=Cz, order=6).output)
 
     def widget(self):
         w = QtGui.QWidget()
@@ -124,6 +123,8 @@ class SMRFlow(object):
         layout.addWidget(self.OSC2.widget(), 1, 0)
         layout.addWidget(self.OSC3.widget(), 2, 0)
         layout.addWidget(self.OSC4.widget(), 3, 0)
+
+        layout.addWidget(self.Spec.widget(), 0, 1, 4, 1)
 
         return w
 
