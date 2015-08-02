@@ -28,14 +28,13 @@ class SpectrumBars(Block):
         self.cnt = 0
 
     def process(self):
-        C = np.fft.fft(self.input.buffer)
-
         self.cnt += 1
         if self.cnt == 20:
             self.cnt = 0
         else:
             return
 
+        C = np.fft.fft(self.input.buffer)
         C = abs(C)
         Fs = 250
 
@@ -72,13 +71,13 @@ class Normalizer(Block):
 
     def process(self):
 
-        min = np.min(self.input.buffer)
+        min = np.min(self.input.buffer) / 2
         self.min = self.min * self.time_factor + min * (1.0 - self.time_factor)
 
-        max = np.max(self.input.buffer)
+        max = np.max(self.input.buffer) * 2
         self.max = self.max * self.time_factor + max * (1.0 - self.time_factor)
 
-        out = (np.array(self.input.new) - min) / (max - min)
+        out = (np.array(self.input.new) - min) / (max - min) * 2
         self.output.append(out)
         self.output.process()
 
@@ -163,6 +162,40 @@ class Intensity(Block):
         self.output.append([avg])
         self.output.process()
 
+class DominantFrequency(Block):
+    input = Input()
+
+    chunk_size = 256
+
+    def init(self, input):
+        self.input = input
+        self.cnt = 0
+
+        self.window = np.hanning(self.chunk_size)
+
+        self.freq = Signal()
+
+    def process(self):
+        self.cnt += 1
+        if self.cnt > 20:
+            self.cnt = 0
+        else:
+            return
+
+
+        C = np.fft.rfft(self.input.buffer[-self.chunk_size:] * self.window)
+        C = abs(C)
+        Fs = 250.0
+
+        def index_max(values):
+            return max(xrange(len(values)),key=values.__getitem__)
+
+        freq = index_max(C)
+        freq = freq / Fs
+
+        self.freq.append([freq])
+        self.freq.process()
+
 
 class MusicControl(object):
     
@@ -178,18 +211,26 @@ class MusicControl(object):
         Alpha = Normalizer(Alpha)
 
         self.midi = MidiControl(cc={23: Alpha})
-        self.midi.cc[42] = Fz
+        self.midi.cc[1] = Normalizer(Intensity(BandPass(12, 15, input=Fz)))
+        self.midi.cc[2] = Normalizer(Intensity(BandPass(15, 18, input=Fz)))
+        self.midi.cc[3] = Normalizer(Intensity(BandPass(18, 21, input=Fz)))
+
+        dom_freq = DominantFrequency(Fz).freq
+        dom_freq.color = 'green'
+        self.midi.cc[4] = dom_freq
 
         Osci2 = Oscilloscope('Intensity', channels=[Alpha])
         Osci2.autoscale = False
 
-        fftFilt = Spectrograph('Spectrogram', mode='waterfall')
+        Osci2.channels.append(dom_freq)
+
+        #fftFilt = Spectrograph('Spectrogram', mode='waterfall')
         #fftFilt.freq_range = gridFilter.range
         #fftFilt.label = 'Frequency Spectrum'
 
         self.RAWOSC1 = Osci1
         self.OSC2 = Osci2
-        self.fftFilt = fftFilt
+        #self.fftFilt = fftFilt
         self.bars = SpectrumBars(input=Fz)
 
 
