@@ -9,9 +9,12 @@ import pyo
 class Amplitude(Block):
     input = Input()
 
-    def __init__(self, input):
+
+    def init(self, input):
+    #def __init__(self, input):
         self.output = Signal()
-        super(Amplitude, self).__init__(input=input)
+    #    super(Amplitude, self).__init__()
+        self.input = input
 
     def process(self):
         ampl = sum(np.abs(self.input.new))
@@ -97,22 +100,24 @@ class SMRFlow(object):
 
         Cz = DCBlock(Cz).ac
 
-        self.OSC1 = Oscilloscope('Raw Signal', channels=[BandPass(0.0, 30.0, input=Cz).output])
+        self.OSC1 = Oscilloscope('Raw Signal', channels=[BandPass(0.0, 30.0, input=Cz)])
         
-        SMR = BandPass(12, 15, input=Cz, order=6).output
+        SMR = BandPass(12, 15, input=Cz, order=6)
         self.OSC2 = Oscilloscope('SMR Signal', channels=[SMR])
 
-        SMR_amplitude = Averager(Amplitude(SMR).output).output
+        SMR_amplitude = Averager(Amplitude(SMR))
+        #SMR_amplitude = Amplitude(SMR)
+        #SMR_amplitude = Averager((SMR_amplitude))
 
         self.OSC3 = Oscilloscope('SMR Amplitude', channels=[SMR_amplitude])
 
-        SMR_trend = Trendline(SMR_amplitude).output
+        SMR_trend = Trendline(SMR_amplitude)
 
         self.OSC4 = Oscilloscope('SMR Trendline', channels=[SMR_trend])
 
-        self.bb = BinauralBeat(volume=SMR_amplitude)
+        #self.bb = BinauralBeat(volume=SMR_amplitude)
 
-        self.Spec = Spectrograph('Cz Spectrogram', input=BandPass(0.1, 30.0, input=Cz, order=6).output)
+        #self.Spec = Spectrograph('Cz Spectrogram', input=BandPass(0.1, 30.0, input=Cz, order=6))
 
     def widget(self):
         w = QtGui.QWidget()
@@ -124,7 +129,7 @@ class SMRFlow(object):
         layout.addWidget(self.OSC3.widget(), 2, 0)
         layout.addWidget(self.OSC4.widget(), 3, 0)
 
-        layout.addWidget(self.Spec.widget(), 0, 1, 4, 1)
+        #layout.addWidget(self.Spec.widget(), 0, 1, 4, 1)
 
         return w
 
