@@ -11,6 +11,9 @@ class Input(TraitType):
         return 'a Signal or output Block instance'
 
     def validate(self, object, name, value):
+        if isinstance(object, Block) and not hasattr(object, 'inputs'):
+            raise Exception("Input trait can't be assigned before Block.__init__")
+
         if isinstance(value, Block):
             if hasattr(value, 'output'):
                 value = value.output
@@ -23,7 +26,6 @@ class Input(TraitType):
 
 class Block(HasTraits):
     def __init__(self, *args, **config):
-
         self.inputs = set()
 
         super(Block, self).__init__(**config)
