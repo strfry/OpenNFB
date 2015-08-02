@@ -48,6 +48,9 @@ class SpectrumBars(Block):
 
         self.bars.setOpts(height=Power_Ratio)
 
+    def updateGUI(self):
+        print 'updateGUI'
+
     def widget(self):
         return self.plot
 
@@ -80,21 +83,64 @@ class Normalizer(Block):
         self.output.process()
 
 
+from traits.api import Dict, Range, on_trait_change
+import random
+
 class MidiControl(Block):
-    cc1 = Input()
-    cc2 = Input()
+    cc = Dict(Range(0, 127), Input)
 
     def init(self, channel=0, port_name='nfb'):
         from rtmidi2 import MidiOut
         self.channel = channel
         self.midi = MidiOut().open_virtual_port(port_name)
 
-    def process(self):
-        clamp = lambda x, mi, ma: max(min(ma, x), mi)
-        val = clamp(self.cc1.buffer[-1] * 127, 0, 127)
+        self.config_button = QtGui.QToolButton()
+        self.config_button.clicked.connect(self.config_dialog)
+        self.config_button.block = self
 
-        self.midi.send_cc(0, 1, val)
+        self.config = False
+
+        #self.on_trait_change()
+        #self.config_dialog()
+
+    def config_dialog(self):
+        self.config = True
+        win = QtGui.QDialog()
+
+        layout = QtGui.QVBoxLayout()
+
+        keys = self.cc.keys()
+        keys.sort()
+
+        for cc in keys:
+            label = "CC " + str(cc)
+            button = QtGui.QPushButton(label)
+            func = lambda cc=cc: self.midi.send_cc(0, cc, random.randint(0, 127))
+            button.pressed.connect(func)
+            layout.addWidget(button)
+
+        finishButton = QtGui.QPushButton('Finished')
+        layout.addWidget(finishButton)
+        finishButton.clicked.connect(win.accept)
+
+        win.setLayout(layout)
+
+        win.exec_()
+        self.config = False
+
+    def updateGUI(self):
+        if self.config: return
+
+        clamp = lambda x, mi, ma: max(min(ma, x), mi)
+        for cc in self.cc:
+            sig = self.cc[cc]
+            val = clamp(sig.buffer[-1] * 127, 0, 127)
+
+            self.midi.send_cc(0, cc, val)
         #self.midi.send_pitchbend(0, random.random() * 8000)
+
+    def widget(self):
+        return self.config_button
 
 from traits.api import Int
 
@@ -124,14 +170,15 @@ class MusicControl(object):
         Fz = context.get_channel('Channel 1', color='red', label='Raw with 50/60 Hz Noise')
 
         Fz = DCBlock(Fz).ac
-        Fz = BandPass(1.0, 25.0, input=Fz).output
+        Fz = BandPass(1.0, 25.0, input=Fz)
 
         Osci1 = Oscilloscope('Raw Signal', channels=[Fz])
 
-        Alpha = Intensity(BandPass(8.0, 12.0, input=Fz).output).output
-        Alpha = Normalizer(Alpha).output
+        Alpha = Intensity(BandPass(8.0, 12.0, input=Fz))
+        Alpha = Normalizer(Alpha)
 
-        MidiControl(cc1=Alpha)
+        self.midi = MidiControl(cc={23: Alpha})
+        self.midi.cc[42] = Fz
 
         Osci2 = Oscilloscope('Intensity', channels=[Alpha])
         Osci2.autoscale = False
@@ -154,6 +201,8 @@ class MusicControl(object):
         layout.addWidget(self.RAWOSC1.widget(), 0, 0)
         layout.addWidget(self.OSC2.widget(), 1, 0)
         layout.addWidget(self.bars.widget(), 2, 0)
+
+        layout.addWidget(self.midi.widget(), 0, 1, 3, 1)
 
         return w
 
