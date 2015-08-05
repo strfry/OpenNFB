@@ -1,17 +1,15 @@
 from pyqtgraph.Qt import QtGui, QtCore
-from flow import Block, Signal, Input, BandPass, DCBlock
-from flow import Spectrograph, Oscilloscope, TextBox
+from flow import Block, Signal, Input, BandPass, DCBlock, BarSpectrogram
+from flow import Spectrograph, Oscilloscope, TextBox, RMS
 
 import numpy as np
-
-
 import pyqtgraph as pg
 
 from traits.api import Float
 
 class Normalizer(Block):
     input = Input()
-    time_factor = Float(0.5)
+    time_factor = Float(0.9999)
 
     def __init__(self, input, **config):
         self.output = Signal()
@@ -31,7 +29,7 @@ class Normalizer(Block):
         max = np.max(self.input.buffer) * 2
         self.max = self.max * self.time_factor + max * (1.0 - self.time_factor)
 
-        out = (np.array(self.input.new) - min) / (max - min) * 2
+        out = (np.array(self.input.new) - self.min) / (self.max - self.min) * 2
         self.output.append(out)
         self.output.process()
 
@@ -141,11 +139,11 @@ class MusicControl(object):
 
         Osci1 = Oscilloscope('Raw Signal', channels=[Fz])
 
-        Alpha = Intensity(BandPass(15.0, 25.0, input=Fz))
+        Alpha = RMS(BandPass(9.0, 11.0, input=Fz))
         Alpha = Normalizer(Alpha)
 
         self.midi = MidiControl(cc={23: Alpha})
-        self.midi.cc[1] = Normalizer(Intensity(BandPass(4, 8, input=Fz)))
+        self.midi.cc[1] = Normalizer(RMS(BandPass(4, 8, input=Fz)))
         #self.midi.cc[2] = Normalizer(Intensity(BandPass(15, 18, input=Fz)))
         #self.midi.cc[3] = Normalizer(Intensity(BandPass(18, 21, input=Fz)))
 
@@ -166,7 +164,7 @@ class MusicControl(object):
         self.RAWOSC1 = Osci1
         self.OSC2 = Osci2
         #self.fftFilt = fftFilt
-        self.bars = SpectrumBars(input=Fz)
+        self.bars = BarSpectrogram('Spectrogram', input=Fz)
 
 
     def widget(self):

@@ -38,11 +38,11 @@ class BandPass(Block):
 
 class DCBlock(Block):
 	input = Input()
-	dc = Float()
+	#dc = Float()
 	ac = Signal()
 
 	def __init__(self, input, **config):
-		self.dc = 0.0
+		self.dc = Signal()
 		#self.ac = Signal()
 
 		super(DCBlock, self).__init__(**config)
@@ -55,9 +55,13 @@ class DCBlock(Block):
 
 	def process(self):
 		for x in self.input.new:
-			self.dc = self.dc * 0.95 + x * 0.05
+			new_dc = self.dc.buffer[-1] * 0.95 + x * 0.05
+			self.dc.append([new_dc])
 
-		self.ac.append([x - self.dc for x in self.input.new])
+		self.dc.process()
+
+
+		self.ac.append([x - self.dc.buffer[-1] for x in self.input.new])
 		self.ac.process()
 
 
@@ -68,6 +72,10 @@ class RMS(Block):
     def init(self, input):
         self.output = Signal()
         self.input = input
+
+    def _input_changed(self):
+        self.output.copy_traits(self.input, ['label', 'color'])
+
 
     def process(self):
     	buf = np.array(self.input.buffer[-self.avg_size:])
@@ -105,6 +113,11 @@ class Trendline(Block):
         self.cnt = 0
 
         super(Trendline, self).__init__(input=input)
+
+       
+	def _input_changed(self):
+		traits = self.input.trait_get(['label', 'color'])
+		self.ac.trait_set(**traits)
 
     def process(self):
         self.cnt += self.input.new_samples

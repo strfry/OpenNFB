@@ -14,11 +14,13 @@ class Signal(HasTraits):
 
 		latency = 0
 		self.connections_ = set()
-
-		self.buffer = [0] * self.buffer_size
 		self.new_samples = 0
-
 		self.timestamp = 0
+
+		self._buffer_size_changed()
+
+	def _buffer_size_changed(self):
+		self.buffer = [0] * self.buffer_size
 
 
 	# Store a connection to connected input blocks
