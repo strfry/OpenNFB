@@ -5,7 +5,7 @@ from pyqtgraph import QtGui
 import pyqtgraph as pg
 import numpy as np
 
-from traits.api import Bool, List, on_trait_change, Int
+from traits.api import Bool, List, on_trait_change, Int, Float
 
 class Oscilloscope(Block):
 
@@ -17,6 +17,8 @@ class Oscilloscope(Block):
 		self._plot_widget.block = self
 
 		self.plots = {}
+
+		self._autoscale_changed()
 
 		super(Oscilloscope, self).__init__(**config)
 
@@ -62,7 +64,8 @@ class Spectrograph(Block):
 
         self.plot_widget.addItem(self.img)
 
-        self.img_array = np.zeros((1000, self.CHUNKSZ/2+1))
+        #self.img_array = np.zeros((1000, self.CHUNKSZ/2+1))
+        self.img_array = np.zeros((1000, 48))
 
         # bipolar colormap
         pos = np.array([0., 1., 0.5, 0.25, 0.75])
@@ -71,9 +74,9 @@ class Spectrograph(Block):
         lut = cmap.getLookupTable(0.0, 1.0, 256)
 
         self.img.setLookupTable(lut)
-        self.img.setLevels([2,5])
+        self.img.setLevels([-2,7])
 
-        FS = 250
+        FS = 48 * 2
 
         freq = np.arange((self.CHUNKSZ/2)+1)/(float(self.CHUNKSZ)/FS)
         yscale = 1.0/(self.img_array.shape[1]/freq[-1])
@@ -88,12 +91,14 @@ class Spectrograph(Block):
     def process(self):
         # normalized, windowed frequencies in data chunk
         spec = np.fft.rfft(self.input.buffer*self.win) / self.CHUNKSZ
+
+        spec = spec[0:48]
         # get magnitude 
         psd = abs(spec)
         # convert to dB scale
         psd = np.log10(psd)
         
-        self.img.setLevels([min(psd), max(psd)])
+        #self.img.setLevels([min(psd), max(psd)])
         
         #print (psd)
 
@@ -112,3 +117,99 @@ class Spectrograph(Block):
 class TextBox(Block):
 	def __init__(self, name, **config):
 		super(TextBox, self).__init__(**config)
+
+
+
+class Spectrograph(Block):
+    CHUNKSZ = Int(256)
+    input = Input()
+        
+    def __init__(self, name, **config):
+        pass
+
+
+    def process(self):
+        # normalized, windowed frequencies in data chunk
+        spec = np.fft.rfft(self.input.buffer*self.win) / self.CHUNKSZ
+
+        spec = spec[0:48]
+        # get magnitude 
+        psd = abs(spec)
+        # convert to dB scale
+        psd = np.log10(psd)
+        
+        #self.img.setLevels([min(psd), max(psd)])
+        
+        #print (psd)
+
+        # roll down one and replace leading edge with new data
+        self.img_array = np.roll(self.img_array, -1, 0)
+        self.img_array[-1:] = psd
+
+        self.img.setImage(self.img_array, autoLevels=False)
+
+    def widget(self):
+        return self.plot_widget
+        
+    def updateGUI(self):
+        pass
+
+
+class BarSpectrogram(Block):
+    input = Input()
+
+    bins = Int(256)
+    lo, hi = Float(1), Float(30)
+
+    ratio = Bool(False)
+    sampling_rate = Float(250)
+
+    def init(self, name):
+        self.plot = pg.PlotWidget(title=name)
+        self.plot.block = self
+
+        self.plot.setLabel('bottom', 'Frequency', units='Hz')
+
+        self.bars = pg.BarGraphItem()
+
+        self.setup_range()
+        self.plot.addItem(self.bars)
+
+    @on_trait_change('bins,lo,hi')
+    def setup_range(self):
+        self.win = np.hanning(self.bins)
+        
+        num_bars = self.hi-self.lo
+
+        FS = self.sampling_rate
+
+        x = np.linspace(self.lo, self.hi, num_bars)
+
+        #self.bars.setOpts(x=x, height=range(num_bars), width=1.0)
+        self.bars = pg.BarGraphItem(x=x, height=range(num_bars), width=1.0)
+
+        self.bars.setOpts(brushes=[pg.hsvColor(float(x) / num_bars) for x in range(num_bars)])
+
+        # TODO: Better autoranging features
+        #self.plot.enableAutoRange('xy', False)
+        self.plot.setYRange(0, 75000)
+
+    def process(self):
+        pass
+
+    def updateGUI(self):
+
+        C = np.fft.rfft(self.input.buffer[-self.bins:] * self.win)
+        C = abs(C)
+
+        lo, hi = self.lo, self.hi
+        data = C[lo : hi]
+
+        if self.ratio:
+            data = data / sum(C)
+
+        self.bars.setOpts(height=data)
+
+
+    def widget(self):
+        return self.plot
