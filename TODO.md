@@ -19,6 +19,12 @@
 *) Threshold block with widget
 *) Module structure, naming
 
+## Dependencies
+
+* Move away from rtmidi2 to something more standard, maybe pypm
+* investigate chaco to replace pyqtgraph
+* take a look at pyface
+
 ## OpenBCI device
 
 * Uses no openbci.org code
