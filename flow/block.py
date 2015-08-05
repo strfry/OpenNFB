@@ -1,19 +1,33 @@
-from signal import Signal
-from traits.api import HasTraits, Instance
+from .signal import Signal
+from traits.api import HasTraits, Disallow, TraitType, on_trait_change
 
-class Input(Instance):
+class Input(TraitType):
     def __init__(self, default=None):
-        super(Input, self).__init__(Signal, input=True)
+        super(Input, self).__init__(default, input=True)
 
         self.default = default
 
+    def info(self):
+        return 'a Signal or output Block instance'
+
+    def validate(self, object, name, value):
+        if isinstance(object, Block) and not hasattr(object, 'inputs'):
+            raise Exception("Input trait can't be assigned before Block.__init__")
+
+        if isinstance(value, Block):
+            if hasattr(value, 'output'):
+                value = value.output
+
+        if not isinstance(value, Signal):
+            self.error(object, name, value)
+
+        return value
 
 
 class Block(HasTraits):
-    def __init__(self, **config):
-        # Register for trait events with the metadata 'input', our Input trait
-        self.on_trait_event(self._input_trait_handler, '+input')
+    #_ = Disallow
 
+    def __init__(self, *args, **config):
         self.inputs = set()
 
         super(Block, self).__init__(**config)
@@ -21,10 +35,13 @@ class Block(HasTraits):
         self.last_timestamp = -1
         
         if hasattr(self, 'init'):
-            self.init()
+            self.init(*args)
 
 
+    # Register for trait events with the metadata 'input', our Input trait
+    @on_trait_change('+input')
     def _input_trait_handler(self, object, name, old, new):
+        print 'assigned channel', new, 'to', object
         if old:
             old._disconnect(self)
             self.inputs.remove(old)

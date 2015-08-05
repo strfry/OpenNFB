@@ -1,4 +1,4 @@
-from PySide import QtCore, QtGui
+from pyqtgraph import QtCore, QtGui
 from open_bci_v3 import OpenBCIBoard
 from bdf import BDFReader
 
@@ -20,17 +20,36 @@ class OpenBCIThread(QtCore.QThread):
       self.board.start_streaming(self.handlePacket)
 
     # Important workaround for OSX: If the input is not kept on being read, the whole (input sub-)system freezes
-    except Exception, e:
-      print "Exception", e
+    except Exception as e:
+      print ("Exception", e)
       while True:
         self.board.ser.read()
+
+import socket
+
+class UDPThread(QtCore.QThread):
+  newPacket = QtCore.Signal(object)
+  
+  def __init__(self, port=8888):
+    super(UDPThread, self).__init__()
+
+    self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    self.socket.bind(('127.0.0.1', port))
+
+  def run(self):
+    while True:
+      data, addr = self.socket.recvfrom(1024)
+      data = eval(data)
+      self.newPacket.emit(eval(str(data)))
+      QtGui.QApplication.instance().processEvents()
+
     
 class BDFThread(QtCore.QThread):
   newPacket = QtCore.Signal(object)
 
   def __init__(self, filename):
     super(BDFThread, self).__init__()
-    self.bdf = BDFReader(file(filename, 'rb'))
+    self.bdf = BDFReader(open(filename, 'rb'))
 
   def emitPacket(self):
     packet =  self.bdf.readPacket()

@@ -11,8 +11,7 @@ class BDFReader(object):
     data = fileobj.read(256)
 
     # Ignore header, and assume we open our own files
-
-    assert("\xffBIOSEMI" == data[0:8])
+    assert(b"\xffBIOSEMI" == data[0:8])
 
     header_len = int(data[184:192].strip())
 
@@ -58,7 +57,7 @@ class BDFReader(object):
       for channel in range(self.NUM_CHANNELS):
             idx = (channel * self.SAMPLE_RATE + sample) * 3
             chunk = block[idx:idx+3]
-            packet += struct.unpack('<i', chunk + ('\0' if chunk[2] < 128 else '\xff'))
+            packet += struct.unpack('<i', chunk + (b'\0' if chunk[2] < 128 else b'\xff'))
       #print packet
       self.read_buffer += (packet,)
       

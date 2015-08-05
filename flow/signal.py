@@ -1,9 +1,11 @@
 import numpy as np
-from traits.api import HasTraits, Color, Str
+from traits.api import HasTraits, Color, Str, Int
 
 class Signal(HasTraits):
 	color = Color()
 	label = Str()
+
+	buffer_size = Int(256)
 
 	def __init__(self, label='', **config):
 		super(Signal, self).__init__(**config)
@@ -13,7 +15,7 @@ class Signal(HasTraits):
 		latency = 0
 		self.connections_ = set()
 
-		self.buffer = [0] * 256
+		self.buffer = [0] * self.buffer_size
 		self.new_samples = 0
 
 		self.timestamp = 0
@@ -22,7 +24,6 @@ class Signal(HasTraits):
 	# Store a connection to connected input blocks
 	def _connect(self, block):
 		self.connections_.add(block)
-		print '_connect', self, block
 
 	def _disconnect(self, block):
 		self.connections_.remove(block)

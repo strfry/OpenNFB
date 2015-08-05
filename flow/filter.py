@@ -1,7 +1,8 @@
 from flow import Block, Signal, Input
 
-from traits.api import Range, Float, on_trait_change
+from traits.api import Range, Float, Int, on_trait_change
 
+import numpy as np
 from scipy.signal import butter, lfilter, iirfilter
 
 class BandPass(Block):
@@ -37,10 +38,12 @@ class BandPass(Block):
 
 class DCBlock(Block):
 	input = Input()
+	dc = Float()
+	ac = Signal()
 
 	def __init__(self, input, **config):
 		self.dc = 0.0
-		self.ac = Signal()
+		#self.ac = Signal()
 
 		super(DCBlock, self).__init__(**config)
 
@@ -56,3 +59,59 @@ class DCBlock(Block):
 
 		self.ac.append([x - self.dc for x in self.input.new])
 		self.ac.process()
+
+
+class RMS(Block):
+    input = Input()
+    avg_size = Int(42)
+
+    def init(self, input):
+        self.output = Signal()
+        self.input = input
+
+    def process(self):
+    	buf = np.array(self.input.buffer[-self.avg_size:])
+        rms = sum(buf ** 2) / len(buf)
+        avg = np.sqrt(rms)
+
+        self.output.append([avg])
+        self.output.process()
+
+
+
+class Averager(Block):
+    input = Input()
+
+    def __init__(self, input):
+        self.output = Signal()
+        self.average = 0.0
+        self.factor = 0.9
+        super(Averager, self).__init__(input=input)
+
+    def process(self):
+        for x in self.input.new:
+            self.average = self.average * self.factor + x * (1.0 - self.factor)
+            self.output.append([self.average])
+
+        self.output.process()
+
+
+class Trendline(Block):
+    input = Input()
+    interval = Int(25)
+
+    def __init__(self, input):
+        self.output = Signal(buffer_size=1000)
+        self.cnt = 0
+
+        super(Trendline, self).__init__(input=input)
+
+    def process(self):
+        self.cnt += self.input.new_samples
+        if self.cnt >= self.interval:
+            self.cnt = 0
+
+            avg = sum(self.input.buffer[-self.interval:]) / self.interval
+
+            self.output.append([avg])
+            self.output.process()

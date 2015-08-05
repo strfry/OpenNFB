@@ -1,7 +1,7 @@
 import importlib
 import imp
 
-from PySide import QtCore, QtGui
+from pyqtgraph import QtCore, QtGui
 
 class ProtocolLauncher(object):
 	def __init__(self, context, path):
@@ -20,7 +20,7 @@ class ProtocolLauncher(object):
 		self.load_protocol(path)
 
 	def load_protocol(self, path):
-	    self.protocol = imp.load_module('protocol', file(path), path, ('.py', 'U', 1))
+	    self.protocol = imp.load_module('protocol', open(path), path, ('.py', 'U', 1))
 	    self.flow = self.protocol.flow()
 
 	    self.flow.init(self.context)
@@ -34,7 +34,7 @@ class ProtocolLauncher(object):
 		self.holdoff.start(2500)
 
 	def handle_reload(self):
-		print self.path, 'changed, reloading'
+		print(self.path, 'changed, reloading')
 
 		del self.flow
 		del self.protocol
