@@ -7,52 +7,6 @@ import numpy as np
 
 import pyqtgraph as pg
 
-class SpectrumBars(Block):
-    input = Input()
-
-    def init(self):
-        self.bands = [4, 8, 12, 15, 20, 30, 50]
-        self.band_names = ['Theta', 'Alpha', 'SMR', 'Beta', 'Hi Beta', 'Gamma']
-
-        num_bands = len(self.band_names)
-        assert len(self.bands) == num_bands + 1
-
-        self.plot = pg.PlotWidget()
-        self.bars = pg.BarGraphItem(x=range(num_bands), height=range(num_bands), width=0.5)
-        self.plot.addItem(self.bars)
-
-        self.plot.getAxis('bottom').setTicks([enumerate(self.band_names)])
-
-        self.bars.setOpts(brushes=[pg.hsvColor(float(x) / num_bands) for x in range(num_bands)])
-
-        self.cnt = 0
-
-    def process(self):
-        self.cnt += 1
-        if self.cnt == 20:
-            self.cnt = 0
-        else:
-            return
-
-        C = np.fft.fft(self.input.buffer)
-        C = abs(C)
-        Fs = 250
-
-        Power = np.zeros(len(self.bands)-1);
-        for Freq_Index in xrange(0,len(self.bands)-1):
-            Freq = float(self.bands[Freq_Index])
-            Next_Freq = float(self.bands[Freq_Index+1])
-            Power[Freq_Index] = sum(C[np.floor(Freq/Fs*len(C)):np.floor(Next_Freq/Fs*len(C))])
-        Power_Ratio = Power/sum(Power)
-
-        self.bars.setOpts(height=Power_Ratio)
-
-    def updateGUI(self):
-        print 'updateGUI'
-
-    def widget(self):
-        return self.plot
-
 from traits.api import Float
 
 class Normalizer(Block):
@@ -141,26 +95,6 @@ class MidiControl(Block):
     def widget(self):
         return self.config_button
 
-from traits.api import Int
-
-class Intensity(Block):
-    input = Input()
-    avg_size = Int(15)
-
-    def __init__(self, input, **config):
-        self.output = Signal()
-
-        super(Intensity, self).__init__(**config)
-
-        self.input = input
-
-
-    def process(self):
-        rms = sum(np.array(self.input.buffer) ** 2) / len(self.input.buffer)
-        avg = np.sqrt(rms)
-
-        self.output.append([avg])
-        self.output.process()
 
 class DominantFrequency(Block):
     input = Input()
@@ -207,22 +141,23 @@ class MusicControl(object):
 
         Osci1 = Oscilloscope('Raw Signal', channels=[Fz])
 
-        Alpha = Intensity(BandPass(8.0, 12.0, input=Fz))
+        Alpha = Intensity(BandPass(15.0, 25.0, input=Fz))
         Alpha = Normalizer(Alpha)
 
         self.midi = MidiControl(cc={23: Alpha})
-        self.midi.cc[1] = Normalizer(Intensity(BandPass(12, 15, input=Fz)))
-        self.midi.cc[2] = Normalizer(Intensity(BandPass(15, 18, input=Fz)))
-        self.midi.cc[3] = Normalizer(Intensity(BandPass(18, 21, input=Fz)))
+        self.midi.cc[1] = Normalizer(Intensity(BandPass(4, 8, input=Fz)))
+        #self.midi.cc[2] = Normalizer(Intensity(BandPass(15, 18, input=Fz)))
+        #self.midi.cc[3] = Normalizer(Intensity(BandPass(18, 21, input=Fz)))
 
-        dom_freq = DominantFrequency(Fz).freq
-        dom_freq.color = 'green'
-        self.midi.cc[4] = dom_freq
+        #dom_freq = DominantFrequency(Fz).freq
+        #dom_freq.color = 'green'
+        #self.midi.cc[4] = dom_freq
 
         Osci2 = Oscilloscope('Intensity', channels=[Alpha])
         Osci2.autoscale = False
 
-        Osci2.channels.append(dom_freq)
+        self.midi.cc[1].color = 'red'
+        Osci2.channels.append(self.midi.cc[1])
 
         #fftFilt = Spectrograph('Spectrogram', mode='waterfall')
         #fftFilt.freq_range = gridFilter.range

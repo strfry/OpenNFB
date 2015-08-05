@@ -1,10 +1,11 @@
+- Peak filter
+
 ## Traits semantics
 
-* Input variable _must_ be assigned in block constructor after super(), this is quite unhandy sometimes
-* Implicit conversion from block to 'output' member
 * Disallow assignment of undeclared traits
 * Input trait for non-signal stuff, default value
 * constructor arguments, automatable? (for using init())
+* process call does not work for collections of Input()
 
 ## Towards Domain Specific Language:
 

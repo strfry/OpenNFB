@@ -3,5 +3,5 @@ from .signal import Signal
 
 from .context import Context
 
-from .display import Oscilloscope, Spectrograph, TextBox
-from .filter import BandPass, DCBlock
+from .display import Oscilloscope, Spectrograph, TextBox, BarSpectrogram
+from .filter import BandPass, DCBlock, RMS, Trendline
