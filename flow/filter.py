@@ -1,6 +1,6 @@
 from flow import Block, Signal, Input
 
-from traits.api import Range, Float, Int, on_trait_change
+from traits.api import Range, Float, Int, on_trait_change, List
 
 import numpy as np
 from scipy.signal import butter, lfilter, iirfilter
@@ -130,5 +130,21 @@ class Trendline(Block):
             self.output.process()
 
 
+class Expression(Block):
+	args = List(Input)
+	input = Input()
 
+	def init(self, func, *args):
+		self.func = func
+		self.args = list(args)
+
+		# Workaround for list event bug 
+		self.input = args[0]
+
+		self.output = Signal()
+
+	def process(self):
+		args = [chan.last for chan in self.args]
+		self.output.append([self.func(*args)])
+		self.output.process()
 

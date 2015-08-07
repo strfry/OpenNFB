@@ -18,10 +18,8 @@ class Threshold(Block):
 
 
 	def init(self, name):
-
-		self.epoch = 5.0
-
 		self.FS = 250
+		self.name=name
 
 		epoch_samples = int(self.FS * self.epoch)
 
@@ -34,30 +32,28 @@ class Threshold(Block):
 		self.bar = QtGui.QProgressBar(orientation=QtCore.Qt.Vertical)
 		self.slider = QtGui.QSlider()
 
-		self.slider.setRange(0, 100)
+		self.slider.setRange(0, 1000)
+		self.bar.setRange(0, 1000)
 
 		self.pass_palette = self.bar.palette()
 
 		if isinstance(self.input.color, QtGui.QColor):
-			color = self.input.color
+			self.color = self.input.color
 		else:
-			color = QtGui.QColor(QtGui.qRgb(*self.input.color))
-		
-		self.pass_palette.setColor(QtGui.QPalette.Highlight, color)
-
-		self.fail_palette = self.bar.palette()
-		self.fail_palette.setColor(QtGui.QPalette.Highlight, QtCore.Qt.red)
-		#self.fail_palette.setColor(self.bar.backgroundRole(), QtCore.Qt.red)
-
-		self.bar.setPalette(self.fail_palette)
-		self.bar.show()
-
-		#self.bar.setStyleSheet("*{ background-color: rgb(45, 50, 30); }")
+			self.color = QtGui.QColor(QtGui.qRgb(*self.input.color))
 
 
+		self.bar.setStyleSheet("""
+			QProgressBar::chunk { background: red; }
+			QProgressBar::chunk[pass='true'] { background: %s ; }
+			""" % self.color.name())
+
+#QProgressBar::chunk[pass="false"] { background: green; }
 		
 	def widget(self):
-		w = QtGui.QWidget()
+		w = QtGui.QGroupBox()
+		w.setTitle(self.name)
+
 		l = QtGui.QHBoxLayout()
 		l.addWidget(self.bar)
 		l.addWidget(self.slider)
@@ -70,11 +66,9 @@ class Threshold(Block):
 	def updateGUI(self):
 		self.bar.setValue(self.signal.last)
 
-		if self.passfail.last:
-			self.bar.setPalette(self.pass_palette)
-		else:
-			self.bar.setPalette(self.fail_palette)
-
+		self.bar.setProperty('pass', self.passfail.last)
+		self.bar.style().polish(self.bar)
+		
 		if self.auto_mode:
 			self.slider.setValue(self.threshold)
 
