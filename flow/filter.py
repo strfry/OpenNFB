@@ -128,3 +128,7 @@ class Trendline(Block):
 
             self.output.append([avg])
             self.output.process()
+
+
+
+

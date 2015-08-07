@@ -60,3 +60,7 @@ class Signal(HasTraits):
 		if new[argmax] and not new[argmax + 1]:
 			return True
 		return False
+
+	@property
+	def last(self):
+		return self.buffer[-1]

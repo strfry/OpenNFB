@@ -5,7 +5,7 @@ from pyqtgraph import QtGui
 import pyqtgraph as pg
 import numpy as np
 
-from traits.api import Bool, List, on_trait_change, Int, Float
+from traits.api import Bool, List, on_trait_change, Int, Float, CFloat, Enum, Trait
 
 class Oscilloscope(Block):
 
@@ -159,7 +159,8 @@ class BarSpectrogram(Block):
     input = Input()
 
     bins = Int(256)
-    lo, hi = Float(1), Float(30)
+    lo, hi = CFloat(1), CFloat(30)
+    align = Trait('bottom', Enum('left', 'right', 'top', 'bottom'))
 
     ratio = Bool(False)
     sampling_rate = Float(250)
@@ -175,24 +176,24 @@ class BarSpectrogram(Block):
         self.setup_range()
         self.plot.addItem(self.bars)
 
+        # TODO: Better autoranging features
+        #self.plot.enableAutoRange('xy', False)
+        
+        self.plot.setYRange(0, 75000)
+
     @on_trait_change('bins,lo,hi')
     def setup_range(self):
         self.win = np.hanning(self.bins)
         
-        num_bars = self.hi-self.lo
-
         FS = self.sampling_rate
+
+        num_bars = int(self.bins * (self.hi - self.lo) / FS)
 
         x = np.linspace(self.lo, self.hi, num_bars)
 
-        #self.bars.setOpts(x=x, height=range(num_bars), width=1.0)
         self.bars = pg.BarGraphItem(x=x, height=range(num_bars), width=1.0)
-
+        
         self.bars.setOpts(brushes=[pg.hsvColor(float(x) / num_bars) for x in range(num_bars)])
-
-        # TODO: Better autoranging features
-        #self.plot.enableAutoRange('xy', False)
-        self.plot.setYRange(0, 75000)
 
     def process(self):
         pass
@@ -209,7 +210,7 @@ class BarSpectrogram(Block):
             data = data / sum(C)
 
         self.bars.setOpts(height=data)
-
+        
 
     def widget(self):
         return self.plot
