@@ -24,6 +24,7 @@ from protocols import ProtocolLauncher
 
 context = Context()
 context.register_channel('Channel 1')
+context.register_channel('Channel 2')
 
 launcher = ProtocolLauncher(context, protocol_name)
 
@@ -31,6 +32,7 @@ sourceThread = BDFThread(sys.argv[2])
 
 def handlePacket(packet):
     context.append_channel_data('Channel 1', [packet[0]])
+    context.append_channel_data('Channel 2', [packet[1]])
     context.process()
 
 sourceThread.newPacket.connect(handlePacket)

@@ -9,7 +9,7 @@ class Threshold(Block):
 	input = Input()
 
 	average_period = Float(0.35)
-	epoch = Float(30.0)
+	epoch = Float(3.0)
 
 	auto_mode = Bool(True)
 	mode = Enum('increase', 'decrease', 'range')

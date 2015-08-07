@@ -27,6 +27,7 @@
 *) Latency Measuring Test Case
 *) Threshold block with widget
 *) Module structure, naming
+*) Fix filter buffer size
 
 ## Dependencies
 
@@ -41,6 +42,7 @@
 * Sync Unit (timestamps)
 * Latency correction
 
+* Proper unit conversion to float/milliVolts
 
 ### Custom Firmware
 

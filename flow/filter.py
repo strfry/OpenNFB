@@ -25,7 +25,7 @@ class BandPass(Block):
 		self._filter_b, self._filter_a = b,a
 
 	def process(self):
-		buffer = self.input.buffer
+		buffer = self.input.buffer[-self.order*3:]
 		filt = lfilter(self._filter_b, self._filter_a, buffer)
 		self.output.append(filt[-1:])
 		self.output.process()
@@ -38,12 +38,10 @@ class BandPass(Block):
 
 class DCBlock(Block):
 	input = Input()
-	#dc = Float()
-	ac = Signal()
 
 	def __init__(self, input, **config):
 		self.dc = Signal()
-		#self.ac = Signal()
+		self.ac = Signal()
 
 		super(DCBlock, self).__init__(**config)
 
