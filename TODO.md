@@ -1,4 +1,13 @@
+life filter adjustment (SMR frequency)
+automatic log file naming (only specify username)
+
+## Filters and such
+
+- Graphic autoscale/normalizing feature (based on marking a good range)
 - Peak filter
+- use detrend?
+- Find out of IIR filters work, and use correctly (maybe higher orders will work then?)
+- 
 
 ## Traits semantics
 
@@ -6,6 +15,9 @@
 * Input trait for non-signal stuff, default value
 * constructor arguments, automatable? (for using init())
 * process call does not work for collections of Input()
+* Simplify threshold into one mode, with 0 treshold deactivating sides
+* set colors on filters
+* Threshold.passfail should be standard output
 
 ## Towards Domain Specific Language:
 

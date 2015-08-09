@@ -9,12 +9,15 @@ class Threshold(Block):
 	input = Input()
 
 	average_period = Float(0.35)
-	epoch = Float(3.0)
+	epoch = Float(13.0)
 
 	auto_mode = Bool(True)
 	mode = Enum('increase', 'decrease', 'range')
 
 	auto_target = Float(90.)
+
+	low_target = Float(90)
+	high_target = Float(90)
 
 
 	def init(self, name):
@@ -27,13 +30,15 @@ class Threshold(Block):
 		self.passfail = Signal()
 
 		self.threshold = 1.0
+		self.high_threshold = 0.0
+
 		self.calc_cnt = 0
 
 		self.bar = QtGui.QProgressBar(orientation=QtCore.Qt.Vertical)
 		self.slider = QtGui.QSlider()
 
-		self.slider.setRange(0, 1000)
-		self.bar.setRange(0, 1000)
+		self.slider.setRange(0, 70)
+		self.bar.setRange(0, 70)
 
 		self.pass_palette = self.bar.palette()
 
@@ -48,15 +53,19 @@ class Threshold(Block):
 			QProgressBar::chunk[pass='true'] { background: %s ; }
 			""" % self.color.name())
 
-#QProgressBar::chunk[pass="false"] { background: green; }
-		
+
+		self.button = QtGui.QPushButton("config")
+		self.button.clicked.connect(self.configure_traits)
+
 	def widget(self):
 		w = QtGui.QGroupBox()
 		w.setTitle(self.name)
 
-		l = QtGui.QHBoxLayout()
-		l.addWidget(self.bar)
-		l.addWidget(self.slider)
+		l = QtGui.QGridLayout()
+		l.addWidget(self.bar, 0, 0)
+		l.addWidget(self.slider, 0, 1)
+
+		l.addWidget(self.button, 1, 0, 1, 2)
 
 		w.setLayout(l)
 		w.block = self
@@ -82,11 +91,18 @@ class Threshold(Block):
 		self.signal.process()
 
 
+
 		self.calc_cnt += 1
 		if self.auto_mode and self.calc_cnt >= avg_period_samples:
 			self.calc_cnt = 0
 
-			self.threshold = np.percentile(self.signal.buffer, self.auto_target)
+			if self.mode == 'decrease':
+				self.threshold = np.percentile(self.signal.buffer, self.auto_target)
+			elif self.mode == 'increase':
+				self.threshold = np.percentile(self.signal.buffer, 100 - self.auto_target)
+			else:
+				self.high_threshold = np.percentile(self.signal.buffer, self.high_target)
+				self.threshold = np.percentile(self.signal.buffer, 100 - self.low_target)
 
 		success = False
 
@@ -97,7 +113,8 @@ class Threshold(Block):
 			if avg > self.threshold:
 				success = True
 		else:
-			assert False, 'range Threshold not implemented'
+			if avg > self.threshold and avg < self.high_threshold:
+				success = True
 
 		self.passfail.append([success])
 		self.passfail.process()
