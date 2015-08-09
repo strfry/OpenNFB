@@ -49,9 +49,16 @@ guiTimer = QtCore.QTimer()
 guiTimer.timeout.connect(updateGUI)
 guiTimer.start(0)
 
-#win = QtGui.QMainWindow()
-#win.setWindowTitle("OpenNFB")
-#win.resize(800, 600)
+
+try:
+    write_file = file(sys.argv[2], 'wb')
+    import bdf
+    writer = bdf.BDFWriter(8)
+    sourceThread.newPacket.connect(writer.append_sample)
+    QtGui.QApplication.instance().aboutToQuit.connect(lambda: writer.write_file(write_file))
+except IndexError:
+  print "No log file specified"
+
 
 ## Start Qt event loop unless running in interactive mode or using pyside.
 if __name__ == '__main__':
