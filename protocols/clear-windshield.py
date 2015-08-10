@@ -49,7 +49,7 @@ class SMRFlow(object):
 
         self.OSC1 = Oscilloscope('Raw Signal', channels=[BandPass(0.0, 30.0, input=ch1)])
         
-        SMR = BandPass(12, 15, input=ch1, color='yellow')
+        SMR = BandPass(11.5, 14.5, input=ch1, color='yellow')
         Theta = BandPass(2, 6, input=ch1, order=6, color='orange')
         hibeta = BandPass(23, 32, input=ch1, order=6, color='cyan')
         
@@ -70,9 +70,9 @@ class SMRFlow(object):
         self.OSC3 = Oscilloscope('SMR Trendline', channels=[Trendline(x) for x in rms_channels])
 
         score = Expression(lambda L, T, H: L - T /4 - H/2, SMR_rms, Theta_rms, hibeta_rms)
-        self.Lthr = Threshold('SMR', input=SMR_rms, mode='increase', auto_target=93)
-        self.Tthr = Threshold('Theta', input=Theta_rms, mode='decrease', auto_target=98)
-        self.Hthr = Threshold('Hi Beta', input=hibeta_rms, mode='decrease', auto_target=98)
+        self.Lthr = Threshold('SMR', input=SMR_rms, mode='increase', auto_target=90)
+        self.Tthr = Threshold('Theta', input=Theta_rms, mode='decrease', auto_target=93)
+        self.Hthr = Threshold('Hi Beta', input=hibeta_rms, mode='decrease', auto_target=92)
         enable = enable=Expression(lambda *x: all(x), self.Lthr.passfail, self.Tthr.passfail, self.Hthr.passfail)
 
         self.Spec = BarSpectrogram('Spectrogram', input=BandPass(0.1, 30.0, input=ch1))

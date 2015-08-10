@@ -1,3 +1,6 @@
+#from traits.etsconfig.api import ETSConfig
+#ETSConfig.toolkit = 'qt4'
+
 from .block import Block, Input
 from .signal import Signal
 

@@ -37,8 +37,8 @@ class Threshold(Block):
 		self.bar = QtGui.QProgressBar(orientation=QtCore.Qt.Vertical)
 		self.slider = QtGui.QSlider()
 
-		self.slider.setRange(0, 70)
-		self.bar.setRange(0, 70)
+		self.slider.setRange(0, 17)
+		self.bar.setRange(0, 17)
 
 		self.pass_palette = self.bar.palette()
 
@@ -80,6 +80,8 @@ class Threshold(Block):
 		
 		if self.auto_mode:
 			self.slider.setValue(self.threshold)
+
+			print type(self.threshold), self.threshold, self.name
 
 	def process(self):
 		assert self.input.new_samples == 1

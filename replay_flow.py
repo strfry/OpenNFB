@@ -12,7 +12,9 @@ import sys, imp
 
 from flow import Context
 
-app = QtGui.QApplication(sys.argv)
+app = QtGui.QApplication.instance()
+if not app:
+    app = QtGui.QApplication(sys.argv)
 
 # Enable antialiasing for prettier plots
 pg.setConfigOptions(antialias=True)
