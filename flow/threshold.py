@@ -81,7 +81,7 @@ class Threshold(Block):
 		if self.auto_mode:
 			self.slider.setValue(self.threshold)
 
-			print type(self.threshold), self.threshold, self.name
+			#print type(self.threshold), self.threshold, self.nameano
 
 	def process(self):
 		assert self.input.new_samples == 1
