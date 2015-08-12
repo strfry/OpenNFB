@@ -1,14 +1,15 @@
 #from traits.etsconfig.api import ETSConfig
 #ETSConfig.toolkit = 'qt4'
 
-from .block import Block, Input
-from .signal import Signal
+from .block import *
+from .signal import *
 
-from .context import Context
+from .context import *
 
-from .display import Oscilloscope, Spectrograph, TextBox, BarSpectrogram
-from .filter import BandPass, DCBlock, RMS, Trendline, Expression
-from .threshold import Threshold
-from .video import MPlayerControl
+from .display import *
+from .filter import *
+from .threshold import *
+from .video import *
+
 
 from pyqtgraph import QtGui
