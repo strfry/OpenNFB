@@ -49,7 +49,7 @@ class SMRFlow(object):
 
         self.OSC1 = Oscilloscope('Raw Signal', channels=[BandPass(0.0, 30.0, input=Cz)])
         
-        SMR = BandPass(9, 11, input=Cz, order=6)
+        SMR = BandPass(12, 15, input=Cz, order=6)
         self.OSC2 = Oscilloscope('SMR Signal', channels=[SMR])
 
         SMR_amplitude = RMS(SMR)
