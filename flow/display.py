@@ -119,48 +119,14 @@ class TextBox(Block):
 		super(TextBox, self).__init__(**config)
 
 
-
-class Spectrograph(Block):
-    CHUNKSZ = Int(256)
-    input = Input()
-        
-    def __init__(self, name, **config):
-        pass
-
-
-    def process(self):
-        # normalized, windowed frequencies in data chunk
-        spec = np.fft.rfft(self.input.buffer*self.win) / self.CHUNKSZ
-
-        spec = spec[0:48]
-        # get magnitude 
-        psd = abs(spec)
-        # convert to dB scale
-        psd = np.log10(psd)
-        
-        #self.img.setLevels([min(psd), max(psd)])
-        
-        #print (psd)
-
-        # roll down one and replace leading edge with new data
-        self.img_array = np.roll(self.img_array, -1, 0)
-        self.img_array[-1:] = psd
-
-        self.img.setImage(self.img_array, autoLevels=False)
-
-    def widget(self):
-        return self.plot_widget
-        
-    def updateGUI(self):
-        pass
-
-
 class BarSpectrogram(Block):
     input = Input()
 
     bins = Int(256)
     lo, hi = CFloat(1), CFloat(30)
     align = Trait('bottom', Enum('left', 'right', 'top', 'bottom'))
+
+    yrange = Int(65000)
 
     ratio = Bool(False)
     sampling_rate = Float(250)
@@ -179,7 +145,7 @@ class BarSpectrogram(Block):
         # TODO: Better autoranging features
         #self.plot.enableAutoRange('xy', False)
         
-        self.plot.setYRange(0, 75000)
+        self.plot.setYRange(0, self.yrange)
 
     @on_trait_change('bins,lo,hi')
     def setup_range(self):
@@ -187,7 +153,10 @@ class BarSpectrogram(Block):
         
         FS = self.sampling_rate
 
-        num_bars = int(self.bins * (self.hi - self.lo) / FS)
+        #num_bars = int(round((self.bins - 1) * (self.hi - self.lo) / FS))
+        num_bars = len(np.zeros(self.bins)[self.lo: self.hi])
+
+        #print 'num_bars', num_bars, self.bins * (self.hi - self.lo) / FS
 
         x = np.linspace(self.lo, self.hi, num_bars)
 
