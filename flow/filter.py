@@ -47,8 +47,8 @@ class NotchFilter(Block):
 	@on_trait_change("frequency,notchWidth")
 	def compute_filter(self):
 		freqRatio = self.frequency / self.nyquist
-		print self.frequency, self.nyquist, freqRatio
-		print type(self.frequency), type(self.nyquist), type(freqRatio)
+		print (self.frequency, self.nyquist, freqRatio)
+		print (type(self.frequency), type(self.nyquist), type(freqRatio))
 
 		wn = freqRatio
 		r = 0.1
@@ -130,68 +130,67 @@ class DCBlock(Block):
 
 
 class RMS(Block):
-    input = Input()
-    avg_size = Int(42)
+	input = Input()
+	avg_size = Int(42)
 
-    def init(self, input):
-        self.output = Signal()
-        self.input = input
+	def init(self, input):
+		self.output = Signal()
+		self.input = input
 
-    def _input_changed(self):
-        self.output.copy_traits(self.input, ['label', 'color'])
+	def _input_changed(self):
+		self.output.copy_traits(self.input, ['label', 'color'])
 
 
-    def process(self):
-    	buf = np.array(self.input.buffer[-self.avg_size:])
-        rms = sum(buf ** 2) / len(buf)
-        avg = np.sqrt(rms)
+	def process(self):
+		buf = np.array(self.input.buffer[-self.avg_size:])
+		rms = sum(buf ** 2) / len(buf)
+		avg = np.sqrt(rms)
 
-        self.output.append([avg])
-        self.output.process()
+		self.output.append([avg])
+		self.output.process()
 
 
 
 class Averager(Block):
-    input = Input()
+	input = Input()
 
-    def __init__(self, input):
-        self.output = Signal()
-        self.average = 0.0
-        self.factor = 0.9
-        super(Averager, self).__init__(input=input)
+	def __init__(self, input):
+		self.output = Signal()
+		self.average = 0.0
+		self.factor = 0.9
+		super(Averager, self).__init__(input=input)
 
-    def process(self):
-        for x in self.input.new:
-            self.average = self.average * self.factor + x * (1.0 - self.factor)
-            self.output.append([self.average])
+	def process(self):
+		for x in self.input.new:
+			self.average = self.average * self.factor + x * (1.0 - self.factor)
+			self.output.append([self.average])
 
-        self.output.process()
+		self.output.process()
 
 
 class Trendline(Block):
-    input = Input()
-    interval = Int(25)
+	input = Input()
+	interval = Int(25)
 
-    def __init__(self, input):
-        self.output = Signal(buffer_size=1000)
-        self.cnt = 0
+	def __init__(self, input):
+		self.output = Signal(buffer_size=1000)
+		self.cnt = 0
 
-        super(Trendline, self).__init__(input=input)
+		super(Trendline, self).__init__(input=input)
 
-       
 	def _input_changed(self):
 		traits = self.input.trait_get(['label', 'color'])
 		self.ac.trait_set(**traits)
 
-    def process(self):
-        self.cnt += self.input.new_samples
-        if self.cnt >= self.interval:
-            self.cnt = 0
+	def process(self):
+		self.cnt += self.input.new_samples
+		if self.cnt >= self.interval:
+			self.cnt = 0
 
-            avg = sum(self.input.buffer[-self.interval:]) / self.interval
+			avg = sum(self.input.buffer[-self.interval:]) / self.interval
 
-            self.output.append([avg])
-            self.output.process()
+			self.output.append([avg])
+			self.output.process()
 
 
 class Expression(Block):

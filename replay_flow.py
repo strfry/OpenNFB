@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 
-from pyqtgraph.Qt import QtGui, QtCore
+from PyQt5 import QtGui, QtCore, QtWidgets
 import numpy as np
-import pyqtgraph as pg
 import scipy.signal
 
 from bdf import BDFReader, BDFWriter
@@ -12,12 +11,7 @@ import sys, imp
 
 from flow import Context
 
-app = QtGui.QApplication.instance()
-if not app:
-    app = QtGui.QApplication(sys.argv)
-
-# Enable antialiasing for prettier plots
-pg.setConfigOptions(antialias=True)
+app = QtWidgets.QApplication(sys.argv)
 
 protocol_name = sys.argv[1]
 replay_file = sys.argv[2]

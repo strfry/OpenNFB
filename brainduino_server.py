@@ -13,7 +13,9 @@ if len(argv) > 1:
 
 timeout = 99
 
+print "Trying to open serial port... ", tty_port,
 ser = serial.Serial(port=tty_port, baudrate = 230400, timeout=timeout)
+print "Success!"
 
 buffer = ""
 
@@ -33,9 +35,11 @@ def parse(buf):
 
 while True:
     a = ser.read()
-
-    if a == '\r':
+#    print a
+    if a == '\r' and len(buffer) == 15:
 		parse(buffer)
 		buffer = ""
+    elif len(buffer) > 16:
+      buffer = ""
     else:
     	buffer += a

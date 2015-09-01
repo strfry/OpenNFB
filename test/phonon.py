@@ -1,5 +1,5 @@
-from PySide import QtGui, QtCore
-from PySide.phonon import Phonon
+from PyQt5 import QtGui, QtCore
+from PyQt5.phonon import Phonon
 
 import sys
 
@@ -19,13 +19,11 @@ def set_stuff():
   #height = int(random.random() * 200)
   #vid.setFixedHeight(height)
   vid.videoWidget().setBrightness(-random.random())
-  print vid.videoWidget().brightness()
+  print (vid.videoWidget().brightness())
   
 
 timer = QtCore.QTimer()
 timer.timeout.connect(set_stuff)
 timer.start(200)
-
-print dir(vid)
 
 app.exec_()

@@ -15,7 +15,7 @@ class BinauralBeat(Block):
 
         self.server = pyo.Server(buffersize=1024).boot()
         centerFreq = pyo.Sig(256)
-        binauralFreq = pyo.Sine(freq=0.05, add=10.5, mul=1.5)
+        binauralFreq = pyo.Sine(freq=0.05, add=13.5, mul=1.5)
 
         left = pyo.Sine(freq=centerFreq - binauralFreq / 2)
         right = pyo.Sine(freq=centerFreq + binauralFreq / 2)
@@ -31,7 +31,7 @@ class BinauralBeat(Block):
         self.right = right
 
     def process(self):
-        vol = float(self.volume.buffer[-1] / 3500.0)
+        vol = float(self.volume.buffer[-1]) / 10
         vol = min(vol, 1.0)
         self.left.mul = self.right.mul = vol
 
@@ -44,10 +44,11 @@ class SMRFlow(object):
         C3C4 = context.get_channel('Channel 1', color='red', label='Raw with 50/60 Hz Noise')
 
         ch1 = DCBlock(C3C4).ac
-        ch1 = BandPass(0.0, 35.0, input=ch1)
+        #ch1 = NotchFilter(ch1)
+        #ch1 = BandPass(0.0, 35.0, input=ch1)
         ch1 = DCBlock(ch1).ac
 
-        self.OSC1 = Oscilloscope('Raw Signal', channels=[BandPass(0.0, 30.0, input=ch1)])
+        self.OSC1 = Oscilloscope('Raw Signal', channels=[ch1])
         
         SMR = BandPass(11.5, 14.5, input=ch1, color='yellow')
         Theta = BandPass(2, 6, input=ch1, order=6, color='orange')
@@ -67,15 +68,19 @@ class SMRFlow(object):
         
         self.OSC2 = Oscilloscope('intensities', channels=rms_channels)
 
-        self.OSC3 = Oscilloscope('SMR Trendline', channels=[Trendline(x) for x in rms_channels])
+        score = Expression(lambda L, T, H: 1 * (L - T /4 - H/2) / np.average([L, T, H]), SMR_rms, Theta_rms, hibeta_rms)
 
-        score = Expression(lambda L, T, H: L - T /4 - H/2, SMR_rms, Theta_rms, hibeta_rms)
+        #score = Expression(lambda L, T, H: L - T /4 - H/2, SMR_rms, Theta_rms, hibeta_rms)
         self.Lthr = Threshold('SMR', input=SMR_rms, mode='increase', auto_target=90)
         self.Tthr = Threshold('Theta', input=Theta_rms, mode='decrease', auto_target=93)
         self.Hthr = Threshold('Hi Beta', input=hibeta_rms, mode='decrease', auto_target=92)
-        enable = enable=Expression(lambda *x: all(x), self.Lthr.passfail, self.Tthr.passfail, self.Hthr.passfail)
+        enable = Expression(lambda *x: all(x), self.Lthr.passfail, self.Tthr.passfail, self.Hthr.passfail)
 
-        self.Spec = BarSpectrogram('Spectrogram', input=BandPass(0.1, 30.0, input=ch1))
+        score = Expression(lambda x: 1.0 if x else 0.0, enable)
+
+        self.OSC3 = Oscilloscope('SMR Trendline', channels=[score], autoscale=False)
+
+        self.Spec = BarSpectrogram('Spectrogram', input=ch1, hi=125, yrange=10000)
         
         import os
         if 'MOVIE' in os.environ:

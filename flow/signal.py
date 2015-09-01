@@ -1,8 +1,8 @@
 import numpy as np
-from traits.api import HasTraits, Color, Str, Int
+from traits.api import HasTraits, Str, Int
 
 class Signal(HasTraits):
-	color = Color()
+	color = Str("white")
 	label = Str()
 
 	buffer_size = Int(256)

@@ -1,9 +1,9 @@
-from pyqtgraph import QtCore, QtGui
+from PyQt5 import QtCore, QtGui
 from open_bci_v3 import OpenBCIBoard
 from bdf import BDFReader
 
 class OpenBCIThread(QtCore.QThread):
-  newPacket = QtCore.Signal(object)
+  newPacket = QtCore.pyqtSignal(object)
   
   def __init__(self, ttyPath = '/dev/ttyUSB0'):
     super(OpenBCIThread, self).__init__()
@@ -28,7 +28,7 @@ class OpenBCIThread(QtCore.QThread):
 import socket
 
 class UDPThread(QtCore.QThread):
-  newPacket = QtCore.Signal(object)
+  newPacket = QtCore.pyqtSignal(object)
   
   def __init__(self, port=8888):
     super(UDPThread, self).__init__()
@@ -45,7 +45,7 @@ class UDPThread(QtCore.QThread):
 
     
 class BDFThread(QtCore.QThread):
-  newPacket = QtCore.Signal(object)
+  newPacket = QtCore.pyqtSignal(object)
 
   def __init__(self, filename):
     super(BDFThread, self).__init__()

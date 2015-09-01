@@ -1,13 +1,13 @@
 import importlib
 import imp
 
-from pyqtgraph import QtCore, QtGui
+from PyQt5 import QtCore, QtWidgets
 
 class ProtocolLauncher(object):
 	def __init__(self, context, path):
 		self.context = context
 		self.path = path
-		self.win = QtGui.QMainWindow()
+		self.win = QtWidgets.QMainWindow()
 
 		self.watcher = QtCore.QFileSystemWatcher()
 		self.watcher.addPath(path)

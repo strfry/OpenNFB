@@ -30,12 +30,8 @@ class Oscilloscope(Block):
 		for channel in new:
 			plot = self._plot_widget.plot()
 			
-			if isinstance(channel.color, QtGui.QColor):
-				color = channel.color
-			else:
-				color = QtGui.qRgb(*channel.color)
 			
-			plot.setPen(QtGui.QColor(color))
+			plot.setPen(QtGui.QColor(channel.color))
 			self.plots[channel] = plot
 
 	def _autoscale_changed(self):

@@ -1,3 +1,5 @@
+# Switch off common reference (noise)
+
 life filter adjustment (SMR frequency)
 automatic log file naming (only specify username)
 

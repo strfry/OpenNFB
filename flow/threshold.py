@@ -1,6 +1,6 @@
 from flow import Block, Input, Signal
 
-from pyqtgraph import QtGui, QtCore
+from PyQt5 import QtGui, QtCore
 
 from traits.api import Float, Int, Enum, Bool
 import numpy as np

@@ -41,7 +41,7 @@ class Block(HasTraits):
     # Register for trait events with the metadata 'input', our Input trait
     @on_trait_change('+input')
     def _input_trait_handler(self, object, name, old, new):
-        print 'assigned channel', new, 'to', object
+        print ('assigned channel', new, 'to', object)
         if old:
             old._disconnect(self)
             self.inputs.remove(old)
