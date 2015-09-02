@@ -52,7 +52,7 @@ class BDFThread(QtCore.QThread):
     self.bdf = BDFReader(open(filename, 'rb'))
 
   def emitPacket(self):
-    packet =  self.bdf.readPacket()
+    packet = self.bdf.readPacket()
     if packet:
         self.newPacket.emit(packet)
     else:

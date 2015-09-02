@@ -31,20 +31,6 @@ class BDFReader(object):
     if len(self.read_buffer) > 0:
       return self.read_buffer.pop(0)
 
-  def start_streaming(self, handler):
-    assert len(self.read_buffer) > 0
-    eof = False
-    while not eof:
-      sleep(1.0 / self.SAMPLE_RATE)
-
-      packet = self.readPacket()
-
-      if packet:        
-        handler(self.read_buffer.pop(0))
-      else:
-        eof = True
-            
-
   def _read_into_buffer(self):
     block_size = 3 * self.SAMPLE_RATE * 8
     block = self.fileobj.read(block_size)
