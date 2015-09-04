@@ -1,8 +1,8 @@
 
 from flow import Block, Signal, Input
 
-from pyqtgraph import QtGui
 import pyqtgraph as pg
+from PyQt5.QtGui import *
 import numpy as np
 
 from traits.api import Bool, List, on_trait_change, Int, Float, CFloat, Enum, Trait
@@ -31,7 +31,7 @@ class Oscilloscope(Block):
 			plot = self._plot_widget.plot()
 			
 			
-			plot.setPen(QtGui.QColor(channel.color))
+			plot.setPen(QColor(channel.color))
 			self.plots[channel] = plot
 
 	def _autoscale_changed(self):
@@ -191,23 +191,26 @@ class Waterfall(Block):
     lo, hi = CFloat(1), CFloat(30)
     #align = Trait('bottom', Enum('left', 'right', 'top', 'bottom'))
 
-    #yrange = Int(65000)
+    logarithm = Bool(False)
     sampling_rate = Float(250)
 
-    update_rate = 10
+    update_rate = 20
 
     def init(self, name):
-        self.widget = pg.PlotWidget(title=name)
-        self.widget.block = self
+        self.autoscale_button = QCheckBox('Autoscale')
+        self.autoscale_button.setCheckState(True)
 
-        self.widget.setLabel('bottom', 'Frequency', units='Hz')
-        self.widget.setLabel("left", "Time", units='s')
+        self.plot_widget = pg.PlotWidget(title=name)
+        self.plot_widget.block = self
+
+        self.plot_widget.setLabel('bottom', 'Frequency', units='Hz')
+        self.plot_widget.setLabel("left", "Time", units='s')
 
         #TODO: listener for this
-        #self.widget.setYRange(-self.history_size / self.sampling_rate, 0)
+        #self.plot_widget.setYRange(-self.history_size / self.sampling_rate, 0)
 
-        #self.widget.setLimits(xMin=0, yMax=0)
-        #self.widget.showButtons()
+        #self.plot_widget.setLimits(xMin=0, yMax=0)
+        #self.plot_widget.showButtons()
         #self.waterfallPlotWidget.setAspectLocked(True)
         #self.waterfallPlotWidget.setDownsampling(mode="peak")
         #self.waterfallPlotWidget.setClipToView(True)
@@ -221,8 +224,8 @@ class Waterfall(Block):
         #self.waterfallHistogram.setLevels(-50, 0)
 
         self.waterfallImg = pg.ImageItem()
-        self.widget.clear()
-        self.widget.addItem(self.waterfallImg)      
+        self.plot_widget.clear()
+        self.plot_widget.addItem(self.waterfallImg)      
         self.waterfallHistogram.setImageItem(self.waterfallImg)
 
         self.setup_range()
@@ -263,7 +266,7 @@ class Waterfall(Block):
         self.waterfallImg.resetTransform()
         self.waterfallImg.setPos(self.lo, -history_time)
         self.waterfallImg.scale((self.hi - self.lo) / display_bins, history_time / self.history_size)
-        #self.widget.setYRange(-self.history_size / self.sampling_rate, 0)
+        #self.plot_widget.setYRange(-self.history_size / self.sampling_rate, 0)
 
 
     def process(self):
@@ -277,20 +280,39 @@ class Waterfall(Block):
         C = abs(C)
         C = C[self.lo_index: self.hi_index]
 
+        if self.logarithm:
+            C = np.log(C)
+
         # Roll down one and replace leading edge with new data
         self.waterfallImgArray = np.roll(self.waterfallImgArray, -1, axis=0)
         self.waterfallImgArray[-1] = C
 
     def updateGUI(self):
         self.waterfallImg.setImage(self.waterfallImgArray.T,
-                                   #autoLevels=False, autoRange=False
+                                   autoLevels=self.autoscale_button.checkState(),
+                                   #autoRange=False
                                    )
 
 
     # TODO: This is overwritten by widget member
     def widget(self):
-        return self.widget
+        config_widget = QWidget()
 
+        layout = QHBoxLayout()
+        layout.addWidget(self.autoscale_button)
+#        layout.addWidget(self.histogram)
+
+        config_widget.setLayout(layout)
+
+        layout = QVBoxLayout()
+        layout.addWidget(self.plot_widget)
+        layout.addWidget(config_widget)
+
+        main_widget = QWidget()
+        main_widget.setLayout(layout)
+        main_widget.block = self
+
+        return main_widget
 
 
 

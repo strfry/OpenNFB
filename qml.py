@@ -32,8 +32,8 @@ def setup_flow(context):
 
 	ch1 = DCBlock(ch1_raw).ac
 
-	ch1 = BandPass(1.0, 32.0, input=ch1)
-	ch1 = BandPass(1.0, 32.0, input=ch1)
+	ch1 = BandPass(0.01, 32.0, input=ch1)
+	ch1 = BandPass(0.01, 32.0, input=ch1)
 	#ch1 = BandPass(1.0, 32.0, input=ch1)
 
 
@@ -64,14 +64,13 @@ def setup_flow(context):
 	theta_ = Expression(lambda x, total: x / total, theta, total)
 
 	OSC2 = Oscilloscope('Intensity', channels=[smr_, beta_, theta_])
-	waterfall = Waterfall('Waterfall', input=ch1)
+	waterfall = Waterfall('Waterfall', input=ch1, window_size=1024, update_rate=50, history_size=50)
 
 	layout = QGridLayout()
 	layout.addWidget(OSC1.widget())
 	layout.addWidget(Spec.widget())
 	layout.addWidget(OSC2.widget())
-	layout.addWidget(waterfall.widget, 0, 1, 2, 1)
-	layout.addWidget(waterfall.histogram, 2, 1, 1, 1)
+	layout.addWidget(waterfall.widget(), 0, 1, 3, 1)
 
 	
 
