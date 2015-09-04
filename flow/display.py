@@ -179,3 +179,104 @@ class BarSpectrogram(Block):
 
     def widget(self):
         return self.plot
+
+
+
+class Waterfall(Block):
+    input = Input()
+
+    history_size = 100
+
+    bins = Int(256)
+    lo, hi = CFloat(1), CFloat(30)
+    #align = Trait('bottom', Enum('left', 'right', 'top', 'bottom'))
+
+    #yrange = Int(65000)
+    sampling_rate = Float(250)
+
+    def init(self, name):
+        self.widget = pg.PlotWidget(title=name)
+        self.widget.block = self
+
+        self.widget.setLabel('bottom', 'Frequency', units='Hz')
+
+        #self.waterfallPlotWidget = self.waterfallPlotLayout.addPlot()
+        #self.waterfallPlotLayout.addItem(self.waterfallPlotWidget)
+        #self.waterfallPlotWidget.setLabel("bottom", "Frequency", units="Hz")
+        self.widget.setLabel("left", "Time")
+        #self.widget.setYRange(-self.history_size, 0)
+        #self.widget.setLimits(xMin=0, yMax=0)
+        #self.widget.showButtons()
+        #self.waterfallPlotWidget.setAspectLocked(True)
+        #self.waterfallPlotWidget.setDownsampling(mode="peak")
+        #self.waterfallPlotWidget.setClipToView(True)
+
+        self.histogram = pg.PlotWidget(title='Histogram')
+        
+        # Setup histogram widget (for controlling waterfall plot levels and gradients)
+        self.waterfallHistogram = pg.HistogramLUTItem()
+        self.histogram.addItem(self.waterfallHistogram)
+        self.waterfallHistogram.gradient.loadPreset("flame")
+        #self.waterfallHistogram.setHistogramRange(-50, 0)
+        #self.waterfallHistogram.setLevels(-50, 0)
+
+        self.setup_range()
+        
+    @on_trait_change('bins,lo,hi')
+    def setup_range(self):
+        self.window = np.hanning(self.bins)
+
+        #self.lo_index = 
+        #self.hi_index = 
+        
+
+        self.datacounter = self.history_size
+
+        self.waterfallImgArray = np.zeros((self.history_size, self.bins/2+1))
+        self.waterfallImg = pg.ImageItem()
+        #self.waterfallImg.scale((data[-1] - data[0]) / len(data), 1)
+        self.widget.clear()
+        self.widget.addItem(self.waterfallImg)      
+
+        self.waterfallHistogram.setImageItem(self.waterfallImg)
+
+    def process(self):
+        pass
+
+    def updateGUI(self):
+
+        C = np.fft.rfft(self.input.buffer[-self.bins:] * self.window)
+        C = abs(C)
+
+        #lo, hi = self.lo, self.hi
+        #data = C[lo : hi]
+
+        # Roll down one and replace leading edge with new data
+        self.waterfallImgArray = np.roll(self.waterfallImgArray, -1, axis=0)
+        self.waterfallImgArray[-1] = C
+        self.waterfallImg.setImage(self.waterfallImgArray.T,
+                                   #autoLevels=False, autoRange=False
+                                   )
+
+        # Move waterfall image to always start at 0
+        #self.waterfallImg.setPos(data[0],
+        #                         -self.datacounter if self.datacounter < self.waterfall_history_size
+        #                         else -self.waterfall_history_size)
+
+        # Link histogram widget to waterfall image on first run
+        # (must be done after first data is received or else levels would be wrong)
+        if self.datacounter == 1:
+            self.waterfallHistogram.setImageItem(self.waterfallImg)
+
+
+
+
+    # TODO: This is overwritten by widget member
+    def widget(self):
+        return self.widget
+
+
+
+
+
+

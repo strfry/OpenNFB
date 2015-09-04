@@ -22,7 +22,6 @@ Rectangle {
     onVolumeChanged: {
         mediaPlayer.volume = Math.min(Math.max(volume, 0.2), 1.0);
     }
-
     
     onSpeedChanged: {
         var speed_ = Math.min(Math.max(speed*4, 1.0), 4.0)
@@ -30,7 +29,11 @@ Rectangle {
     }
 
     onBrightnessChanged: {
-        //overlay.opacity = 1.0 - Math.min(Math.max(brightness, 0.0), 1.0);
+        var newOpacity = 1.0 - Math.min(Math.max(brightness, 0.0), 1.0);
+
+        overlay.opacity = 0.9 * overlay.opacity + 0.1 * newOpacity;
+
+        //console.log('opacity changed to', overlay.opacity)
     }
     
     
@@ -46,7 +49,7 @@ Rectangle {
         id: overlay
         color: "black"
         anchors.fill: parent
-        opacity: 1.0 - Math.min(Math.max(parent.brightness, 0.0), 1.0);
+        //opacity: 1.0 - Math.min(Math.max(parent.brightness, 0.0), 1.0);
     }
     
 
