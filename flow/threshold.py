@@ -45,7 +45,7 @@ class Threshold(Block):
 		if isinstance(self.input.color, QtGui.QColor):
 			self.color = self.input.color
 		else:
-			self.color = QtGui.QColor(QtGui.qRgb(*self.input.color))
+			self.color = QtGui.QColor(self.input.color)
 
 
 		self.bar.setStyleSheet("""

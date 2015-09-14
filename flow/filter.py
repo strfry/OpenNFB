@@ -206,6 +206,9 @@ class Expression(Block):
 
 		self.output = Signal()
 
+	def _input_changed(self):
+		self.output.copy_traits(self.input, ['label', 'color'])
+
 	def process(self):
 		args = [chan.last for chan in self.args]
 		self.output.append([self.func(*args)])
