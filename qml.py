@@ -41,30 +41,35 @@ def setup_flow(context):
 	OSC1 = Oscilloscope('Raw', channels=[ch1])
 	Spec = BarSpectrogram('Raw Spec', input=ch1)
 
-	smr = BandPass(11.5, 14.5, input=ch1)
-	smr = Averager(RMS(smr))
+	reward = BandPass(9, 12, input=ch1)
+	reward = Averager(RMS(reward))
 
-	beta = BandPass(23, 32, input=ch1)
-	beta = Averager(RMS(beta))
+	inhibit1 = BandPass(18, 32, input=ch1)
+	inhibit1 = Averager(RMS(inhibit1))
 
-	theta = BandPass(2, 6, input=ch1)
-	theta = Averager(RMS(theta))
+	inhibit2 = BandPass(1, 7, input=ch1)
+	inhibit2 = Averager(RMS(inhibit2))
 
 	total = DCBlock(RMS(ch1)).dc
 
 	#total_rms = Averager(RMS(ch1))
 
-	#smr = Expression(lambda x, y: x / y, smr, total_rms)
-	smr.output.color = 'green'
-	beta.output.color = 'blue'
-	theta.output.color = 'violet'
+	#reward = Expression(lambda x, y: x / y, reward, total_rms)
+	reward.output.color = 'green'
+	inhibit1.output.color = 'cyan'
+	inhibit2.output.color = 'violet'
 
-	smr_ = Expression(lambda x, total: x / total, smr, total)
-	beta_ = Expression(lambda x, total: x / total, beta, total)
-	theta_ = Expression(lambda x, total: x / total, theta, total)
+	reward_ = Expression(lambda x, total: x / total, reward, total)
+	inhibit1_ = Expression(lambda x, total: x / total, inhibit1, total)
+	inhibit2_ = Expression(lambda x, total: x / total, inhibit2, total)
 
-	OSC2 = Oscilloscope('Intensity', channels=[smr_, beta_, theta_])
-	waterfall = Waterfall('Waterfall', input=ch1, window_size=1024, update_rate=50, history_size=50)
+	# TODO: Fix color propagation, once and for all
+	reward_.output.color = 'green'
+	inhibit1_.output.color = 'cyan'
+	inhibit2_.output.color = 'violet'
+
+	OSC2 = Oscilloscope('Intensity', channels=[reward_, inhibit1_, inhibit2_])
+	waterfall = Waterfall('Waterfall', input=ch1, window_size=512, update_rate=20, history_size=50)
 
 	layout = QGridLayout()
 	layout.addWidget(OSC1.widget())
@@ -72,36 +77,25 @@ def setup_flow(context):
 	layout.addWidget(OSC2.widget())
 	layout.addWidget(waterfall.widget(), 0, 1, 3, 1)
 
+	reward = Threshold('reward', input=reward).passfail
+	inhibit1 = Threshold('inhibit1', input=inhibit1, mode='decrease').passfail
+	inhibit2 = Threshold('inhibit2', input=inhibit2, mode='decrease').passfail
+
+	reward = Averager(reward)
+	inhibit1 = Averager(inhibit1)
+	inhibit2 = Averager(inhibit2)
 	
 
-	def update_qml(smr, beta, theta, total):
-		bias = 0.3
-		factor = 1
+	def update_qml(reward, inhibit1, inhibit2, total):
+		brightness = (reward * 0.4 + inhibit1 * 0.3 + inhibit2 * 0.3)
 
-		# Very important to cast to float here, Qt silently ignores numpy types
-		
-		# Beta 10-40, Target 1-10
-		brightness = float(1.0 - beta / 10)
-		#brightness = float(smr / beta) / 0.035 - 1.0
-		brightness = float(smr / total * 1000)
-
-		volume = float(smr / beta) / 0.045 - 1.0
+		#volume = float(reward / inhibit1) / 0.045 - 1.0
 
 
 		videoPlayer.setProperty('brightness', brightness)
-		videoPlayer.setProperty('volume', volume)
+		#videoPlayer.setProperty('volume', volume)
 
-		global counter
-		#if not counter: counter = 0
-		counter += 1
-		if counter > 50:
-			counter = 0
-			videoPlayer.setProperty('speed', brightness)
-			print ('beta ', beta/total, 'smr ', smr/total, 'theta ', theta/total, 'total power', total)
-
-		return 0.0
-
-	foo = Expression(update_qml, smr, beta, theta, total)
+	foo = Expression(update_qml, reward, inhibit1, inhibit2, total)
 
 
 

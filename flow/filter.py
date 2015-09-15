@@ -13,9 +13,10 @@ class BandPass(Block):
 	hi = Float
 	nyquist = Float(125)
 
-	def __init__(self, lo, hi, **config):
-		super(BandPass, self).__init__(lo=lo, hi=hi, **config)
-
+	def init(self, lo, hi, input):
+		self.lo = lo
+		self.hi = hi
+		self.input = input
 		self.output = Signal()
 
 	@on_trait_change("lo,hi,order,nyquist")

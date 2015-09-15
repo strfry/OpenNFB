@@ -5,49 +5,57 @@ import pyqtgraph as pg
 from PyQt5.QtGui import *
 import numpy as np
 
-from traits.api import Bool, List, on_trait_change, Int, Float, CFloat, Enum, Trait
+from traits.api import Bool, List, on_trait_change, Int, Float, CFloat, Enum, Trait, Str
 
 class Oscilloscope(Block):
 
-	autoscale = Bool(True)
-	channels = List(Input())
+    autoscale = Bool(True)
+    channels = List(Input())
+    name = Str()
 
-	def __init__(self, name, **config):
-		self._plot_widget = pg.PlotWidget(title=name)
-		self._plot_widget.block = self
+    def __init__(self, name, channels, **config):
+        self._plot_widget = pg.PlotWidget(title=name)
+        self._plot_widget.block = self
 
-		self.plots = {}
+        self.plots = {}
 
-		self._autoscale_changed()
+        self._autoscale_changed()
 
-		super(Oscilloscope, self).__init__(**config)
+        self.name = name
 
+        # Workaround for lua tables
+        if hasattr(channels, 'values'):
+            channels = channels.values()
+        channels = list(channels)
 
-	@on_trait_change('channels[]')
-	def channels_changed(self, object, name, old, new):
-		for channel in old:
-			del self.plots[channel]
-		for channel in new:
-			plot = self._plot_widget.plot()
-			
-			
-			plot.setPen(QColor(channel.color))
-			self.plots[channel] = plot
-
-	def _autoscale_changed(self):
-		self._plot_widget.enableAutoRange('y', 0.95 if self.autoscale else False)
+        super(Oscilloscope, self).__init__(channels=channels, **config)
 
 
-	def widget(self):
-		return self._plot_widget
+    @on_trait_change('channels[]')
+    def channels_changed(self, object, name, old, new):
+        for channel in old:
+            del self.plots[channel]
+        for channel in new:
+            plot = self._plot_widget.plot()
+            
+            
+            plot.setPen(QColor(channel.color))
+            self.plots[channel] = plot
 
-	def updateGUI(self):
-		for channel in self.plots:
-			plot = self.plots[channel]
-			plot.setData(channel.buffer)
+    def _autoscale_changed(self):
+        self._plot_widget.enableAutoRange('y', 0.95 if self.autoscale else False)
 
-	def process(self):
-		pass
+
+    def widget(self):
+        return self._plot_widget
+
+    def updateGUI(self):
+        for channel in self.plots:
+            plot = self.plots[channel]
+            plot.setData(channel.buffer)
+
+    def process(self):
+        pass
 
 class Spectrograph(Block):
     CHUNKSZ = Int(256)
@@ -83,7 +91,7 @@ class Spectrograph(Block):
         self.win = np.hanning(self.CHUNKSZ)
         #self.show()
         super(Spectrograph, self).__init__(**config)
-		
+        
     def process(self):
         # normalized, windowed frequencies in data chunk
         spec = np.fft.rfft(self.input.buffer*self.win) / self.CHUNKSZ
@@ -111,8 +119,8 @@ class Spectrograph(Block):
         pass
 
 class TextBox(Block):
-	def __init__(self, name, **config):
-		super(TextBox, self).__init__(**config)
+    def __init__(self, name, **config):
+        super(TextBox, self).__init__(**config)
 
 
 class BarSpectrogram(Block):
@@ -127,7 +135,7 @@ class BarSpectrogram(Block):
     ratio = Bool(False)
     sampling_rate = Float(250)
 
-    def init(self, name):
+    def init(self, name, input):
         self.plot = pg.PlotWidget(title=name)
         self.plot.block = self
 
@@ -142,6 +150,9 @@ class BarSpectrogram(Block):
         #self.plot.enableAutoRange('xy', False)
         
         self.plot.setYRange(0, self.yrange)
+
+        self.input = input
+        self.name = name
 
     @on_trait_change('bins,lo,hi')
     def setup_range(self):

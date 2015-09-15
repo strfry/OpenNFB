@@ -29,6 +29,9 @@ class Context(object):
     def append_channel_data(self, channel_name, data):
         self.input_channels[channel_name].append(data)
 
+    def get_channels(self):
+        return list(self.input_channels.values())
+
     def process(self):
         #self.flow.process()
         # Go through input channels,
