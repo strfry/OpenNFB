@@ -1,15 +1,15 @@
 
 from PyQt5.QtCore import QUrl, QTimer, QFileSystemWatcher
-from PyQt5.QtWidgets import *
+from PyQt5.QtWidgets import QApplication, QMainWindow
 
-from pyqtgraph.dockarea import *
+from pyqtgraph.dockarea import DockArea, Dock
 
 import sys
 import signal as _signal
 
 from acquisition import UDPThread
+from launcher import LuaLauncher
 
-import lupa
 import flow
 
 _signal.signal(_signal.SIGINT, _signal.SIG_DFL)
@@ -21,37 +21,14 @@ context.register_channel('Channel 1')
 context.register_channel('Channel 2')
 
 analysisWindow = QMainWindow()
-
-# Add channel global
-
-def setup_lua(path):
-	print ('Initializing Lua')
-	global lua, guiBlocks
-	lua = lupa.LuaRuntime()
-	lua.globals()["flow"] = flow
-	lua.globals()["channels"] = context.get_channels()
-	source = open(path).read()
-	lua.execute(source)
-
-	guiBlocks = lua.eval('setup()')
-	#lua.eval('gui()')
-
-	area = DockArea()
-
-	for block in guiBlocks:
-		dock = Dock(block.name)
-		dock.addWidget(block.widget())
-		area.addDock(dock)
-
-	analysisWindow.setCentralWidget(area)
-
+area = DockArea()
+analysisWindow.setCentralWidget(area)
 
 path = 'protocols/test.lua'
+if len(sys.argv) > 1:
+	path = sys.argv[1]
 
-setup_lua(path)
-fileWatcher = QFileSystemWatcher()
-fileWatcher.addPath(path)
-fileWatcher.fileChanged.connect(lambda: setup_lua(path))
+launcher = LuaLauncher(context, path, area)
 
 analysisWindow.show()
 
@@ -66,8 +43,9 @@ sourceThread.newPacket.connect(handlePacket)
 sourceThread.start()
 
 def updateGUI():
-	for block in guiBlocks:
+	for block in launcher.guiBlocks:
 		block.updateGUI()
+
 
 guiTimer = QTimer()
 guiTimer.timeout.connect(updateGUI)

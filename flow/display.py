@@ -30,7 +30,6 @@ class Oscilloscope(Block):
 
         super(Oscilloscope, self).__init__(channels=channels, **config)
 
-
     @on_trait_change('channels[]')
     def channels_changed(self, object, name, old, new):
         for channel in old:

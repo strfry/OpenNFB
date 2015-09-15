@@ -37,6 +37,9 @@ class Block(HasTraits):
         if hasattr(self, 'init'):
             self.init(*args)
 
+    def __del__(self):
+        print ('Block ', self, 'deleted')
+
 
     # Register for trait events with the metadata 'input', our Input trait
     @on_trait_change('+input')

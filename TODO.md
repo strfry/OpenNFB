@@ -1,15 +1,26 @@
-# Switch off common reference (noise)
+# OpenBCI Driver
+- Automatic restarting if stream stops
+- Handle missing packets
+- Switch off common reference (noise)
+- Impedance checking GUI
+- Unit conversion to µV
+## Firmware rewrite (?)
+  change samplerate
 
-life filter adjustment (SMR frequency)
+
+# Live Control Features
+Training frequency selection widget
+
+
+# Recording Tool
 automatic log file naming (only specify username)
 
 ## Filters and such
 
 - Graphic autoscale/normalizing feature (based on marking a good range)
 - Peak filter
-- use detrend?
 - Find out of IIR filters work, and use correctly (maybe higher orders will work then?)
-- 
+- Artifact Rejection
 
 ## Traits semantics
 
@@ -49,22 +60,6 @@ automatic log file naming (only specify username)
 * investigate chaco to replace pyqtgraph
 * take a look at pyface
 
-## OpenBCI device
-
-* Uses no openbci.org code
-* Automatic restarts
-* Sync Unit (timestamps)
-* Latency correction
-
-* Proper unit conversion to float/milliVolts
-
-### Custom Firmware
-
-* 30 Hz Aliasing bug
-* Customize Sampling Rate (fewer channels)
-* DSP on site (STM32)
-* Grow Light pulsing
-
 
 Design Decisions:
 
@@ -81,18 +76,11 @@ Design Decisions:
 
 
 
-BUGS:
-* (OpenBCI link becomes unreliable sometimes) not seen anymore -> Detect link problems and implement automatic restarting
-
 TODO:
 * Limit Error message (and trace() feature)
 * Make a simple threshold widget
 * Buffer length request feature for Input() port
 * Give blocks a name, so they can store their config in a separate file in Python object notation
-
-Instrument Control
-* Generate MIDI events, control volume, pitch, other filters...
-* Take a look at OSC (pyosc) - done, better use MIDI for ableton
 
 
 Recording Features
@@ -114,7 +102,7 @@ Widgets:
 * Fire animation
 
 Hardware:
-* Light & Sound Box
+* Light & Sound Box (Grow light)
 
 
 DSL Features:
@@ -136,9 +124,6 @@ Transform:
 
 
 Output:
-* Oscilloscope
-* Spectral analyzer
-
 * single buffer across filter chain (an idea from pyo, allow in-place processing)
 * Signal class:
 	- Controls buffer length
@@ -150,6 +135,3 @@ Output:
 * Save configs to .config file (with ConfigParser?)
 
 
-Rewriting or patching the OpenBCI firmware is on my agenda for 2 reasons:
-1) There is this bug, which sometimes introduces an aliasing artefact at 30 Hz, much like the 50 Hz mainline noise. This is probably a misconfiguration of the ADS1299, maybe the wrong low pass filter at the input stage is selected.
-2) I want to optionally use higher sample rates than 250 Hz (the ADS1299 supports up to 16 kHz). This might be possible by deactivating some channels, to get everything through the rate limited Bluetooth line. Higher sample rates are interesting for examining lambda waves (above gamma, starting from 150 Hz), and EMG analysis, where signals up to 1 kHz are told to be found.
