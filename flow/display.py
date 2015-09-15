@@ -2,7 +2,7 @@
 from flow import Block, Signal, Input
 
 import pyqtgraph as pg
-from PyQt5.QtGui import *
+from pyqtgraph import QtGui
 import numpy as np
 
 from traits.api import Bool, List, on_trait_change, Int, Float, CFloat, Enum, Trait, Str
@@ -38,7 +38,7 @@ class Oscilloscope(Block):
             plot = self._plot_widget.plot()
             
             
-            plot.setPen(QColor(channel.color))
+            plot.setPen(QtGui.QColor(channel.color))
             self.plots[channel] = plot
 
     def _autoscale_changed(self):
@@ -207,7 +207,7 @@ class Waterfall(Block):
     update_rate = 20
 
     def init(self, name):
-        self.autoscale_button = QCheckBox('Autoscale')
+        self.autoscale_button = QtGui.QCheckBox('Autoscale')
         self.autoscale_button.setCheckState(True)
 
         self.plot_widget = pg.PlotWidget(title=name)
@@ -306,19 +306,19 @@ class Waterfall(Block):
 
     # TODO: This is overwritten by widget member
     def widget(self):
-        config_widget = QWidget()
+        config_widget = QtGui.QWidget()
 
-        layout = QHBoxLayout()
+        layout = QtGui.QHBoxLayout()
         layout.addWidget(self.autoscale_button)
 #        layout.addWidget(self.histogram)
 
         config_widget.setLayout(layout)
 
-        layout = QVBoxLayout()
+        layout = QtGui.QVBoxLayout()
         layout.addWidget(self.plot_widget)
         layout.addWidget(config_widget)
 
-        main_widget = QWidget()
+        main_widget = QtGui.QWidget()
         main_widget.setLayout(layout)
         main_widget.block = self
 

@@ -1,7 +1,4 @@
-
-from PyQt5.QtCore import QUrl, QTimer, QFileSystemWatcher
-from PyQt5.QtWidgets import QApplication, QMainWindow
-
+from pyqtgraph import QtCore, QtGui
 from pyqtgraph.dockarea import DockArea, Dock
 
 import sys
@@ -13,14 +10,14 @@ from launcher import LuaLauncher
 import flow
 
 _signal.signal(_signal.SIGINT, _signal.SIG_DFL)
-myApp = QApplication(sys.argv)
+myApp = QtGui.QApplication(sys.argv)
 
 
 context = flow.Context()
 context.register_channel('Channel 1')
 context.register_channel('Channel 2')
 
-analysisWindow = QMainWindow()
+analysisWindow = QtGui.QMainWindow()
 area = DockArea()
 analysisWindow.setCentralWidget(area)
 
@@ -47,7 +44,7 @@ def updateGUI():
 		block.updateGUI()
 
 
-guiTimer = QTimer()
+guiTimer = QtCore.QTimer()
 guiTimer.timeout.connect(updateGUI)
 guiTimer.start(0)
 

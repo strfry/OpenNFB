@@ -1,4 +1,4 @@
-from PyQt5 import QtCore, QtGui
+from pyqtgraph import QtCore
 
 import socket
 
@@ -16,4 +16,4 @@ class UDPThread(QtCore.QThread):
       data, addr = self.socket.recvfrom(1024)
       data = eval(data)
       self.newPacket.emit(eval(str(data)))
-      QtGui.QApplication.instance().processEvents()
+      #QtGui.QApplication.instance().processEvents()

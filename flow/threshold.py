@@ -1,6 +1,6 @@
 from flow import Block, Input, Signal
 
-from PyQt5 import QtGui, QtCore
+from pyqtgraph import QtGui, QtCore
 
 from traits.api import Float, Int, Enum, Bool
 import numpy as np
@@ -20,7 +20,7 @@ class Threshold(Block):
 	high_target = Float(90)
 
 
-	def init(self, name):
+	def init(self, name, input):
 		self.FS = 250
 		self.name=name
 
@@ -41,6 +41,8 @@ class Threshold(Block):
 		self.bar.setRange(0, 17)
 
 		self.pass_palette = self.bar.palette()
+
+		self.input = input
 
 		if isinstance(self.input.color, QtGui.QColor):
 			self.color = self.input.color

@@ -2,7 +2,7 @@
 import lupa
 import flow
 
-from PyQt5 import QtCore, QtWidgets
+from pyqtgraph import QtCore, QtGui
 from pyqtgraph.dockarea import Dock
 
 class LuaLauncher(object):
@@ -25,10 +25,13 @@ class LuaLauncher(object):
 		lua.globals()["flow"] = flow
 		lua.globals()["channels"] = self.context.get_channels()
 		source = open(path).read()
-		lua.execute(source)
 
-		self.guiBlocks = lua.eval('setup()')
-		#lua.eval('gui()')
+		try:
+			lua.execute(source)
+			self.guiBlocks = lua.eval('setup()')
+			#lua.eval('gui()')
+		except Exception as e:
+			print ('Lua Exception occured: ', e)
 
 		for block in self.guiBlocks:
 			dock = Dock(block.name)
@@ -46,6 +49,9 @@ class LuaLauncher(object):
 		self.guiBlocks = ()
 
 		self.context.clear_signals()
+
+		# Weird pyqtgraph bug, need to clear twice to get them all
+		self.dockarea.clear()
 		self.dockarea.clear()
 
 		# Reload protocol
