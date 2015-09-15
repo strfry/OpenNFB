@@ -27,6 +27,13 @@ if len(sys.argv) > 1:
 
 launcher = LuaLauncher(context, path, area)
 
+toolbar = QtGui.QToolBar()
+saveAction = toolbar.addAction('Save Layout')
+saveAction.triggered.connect(launcher.save_layout)
+restoreAction = toolbar.addAction('Restore Layout')
+restoreAction.triggered.connect(launcher.restore_layout)
+analysisWindow.addToolBar(toolbar)
+
 analysisWindow.show()
 
 sourceThread = UDPThread()

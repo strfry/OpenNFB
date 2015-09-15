@@ -16,7 +16,13 @@ function setup()
 	OSC2 = flow.Oscilloscope('Theta', {theta})
 
 	theta.color = 'green'
-	thresh = flow.Threshold('Theta', theta)
+	thresh = flow.Threshold('Theta Threshold', theta)
 
 	return OSC1, Spec, OSC2, thresh
+end
+
+
+-----------------------Auto-Generated config - DO NOT EDIT-----------------------
+function doc_config()
+	return { float = { }, main = { 'horizontal', { { 'vertical', { { 'dock', 'Raw', { }}, { 'dock', 'Raw Spec', { }}, { 'dock', 'Theta', { }}}, { sizes = { 165, 164, 165}}}, { 'dock', 'Theta Threshold', { }}}, { sizes = { 680, 137}}}}
 end
