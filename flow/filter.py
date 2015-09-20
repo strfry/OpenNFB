@@ -199,6 +199,7 @@ class Expression(Block):
 	input = Input()
 
 	def init(self, func, *args):
+		print ('Expression: ', func, args[0])
 		self.func = func
 		self.args = list(args)
 
