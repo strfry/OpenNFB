@@ -113,3 +113,4 @@ class LuaLauncher(object):
 	def restore_layout(self):
 		state = to_python(self.lua.eval('doc_config()'))
 		self.dockarea.restoreState(state)
+

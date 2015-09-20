@@ -1,28 +1,35 @@
 function setup()
 
-	ch1_raw = channels[1]	
+	left_raw = channels[0]
+	right_raw = channels[1]
 
-	ch1 = flow.DCBlock(ch1_raw).ac
+	left = flow.DCBlock(left_raw).ac
+	right = flow.DCBlock(right_raw).ac
 
-	ch1 = flow.BandPass(0.1, 33.0, ch1)
-	--ch1 = flow.BandPass(0.01, 32.0, input=ch1)
-	--ch1 = flow.BandPass(1.0, 32.0, input=ch1)
+	left = flow.BandPass(0.1, 33.0, left)
+	left = flow.BandPass(0.1, 33.0, left)
+	left = flow.BandPass(0.1, 33.0, left)
 
-	OSC1 = flow.Oscilloscope('Raw', {ch1})
-	Spec = flow.BarSpectrogram('Raw Spec', ch1)
+	right = flow.BandPass(0.1, 33.0, right)
+	right = flow.BandPass(0.1, 33.0, right)
+	right = flow.BandPass(0.1, 33.0, right)
+	--left = flow.BandPass(0.01, 32.0, left)
+	--left = flow.BandPass(1.0, 32.0, input=left)
 
-	theta = flow.BandPass(4, 8, ch1)
-	theta = flow.RMS(theta)
-	OSC2 = flow.Oscilloscope('Theta', {theta})
+	OSCL = flow.Oscilloscope('Raw Left', {left})
+	OSCR = flow.Oscilloscope('Raw Right', {right})
 
-	theta.color = 'green'
-	thresh = flow.Threshold('Theta Threshold', theta)
+	SpecL = flow.BarSpectrogram('Left Spectrogram', left)
+	SpecR = flow.BarSpectrogram('Right Spectrogram', right)
 
-	return OSC1, Spec, OSC2, thresh
-end
+	leftWaterfall = flow.Waterfall('Left Waterfall')
+	leftWaterfall.input = left
 
+	rightWaterfall = flow.Waterfall('Right Waterfall')
+	rightWaterfall.input = right
 
------------------------Auto-Generated config - DO NOT EDIT-----------------------
+	return OSCL, OSCR, SpecL, SpecR, leftWaterfall, rightWaterfall
+end-----------------------Auto-Generated config - DO NOT EDIT-----------------------
 function doc_config()
-	return { float = { }, main = { 'horizontal', { { 'vertical', { { 'dock', 'Raw', { }}, { 'dock', 'Raw Spec', { }}, { 'dock', 'Theta', { }}}, { sizes = { 165, 164, 165}}}, { 'dock', 'Theta Threshold', { }}}, { sizes = { 680, 137}}}}
+	return { main = { 'vertical', { { 'horizontal', { { 'vertical', { { 'dock', 'Raw Left', { }}, { 'dock', 'Left Spectrogram', { }}}, { sizes = { 197, 197}}}, { 'vertical', { { 'dock', 'Raw Right', { }}, { 'dock', 'Right Spectrogram', { }}}, { sizes = { 197, 197}}}}, { sizes = { 329, 328}}}, { 'dock', 'Left Waterfall', { }}}, { sizes = { 401, 201}}}, float = { }}
 end

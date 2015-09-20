@@ -207,6 +207,8 @@ class Waterfall(Block):
     update_rate = 20
 
     def init(self, name):
+        self.name = name
+        
         self.autoscale_button = QtGui.QCheckBox('Autoscale')
         self.autoscale_button.setCheckState(True)
 

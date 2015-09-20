@@ -12,29 +12,9 @@ import flow
 _signal.signal(_signal.SIGINT, _signal.SIG_DFL)
 myApp = QtGui.QApplication(sys.argv)
 
-
 context = flow.Context()
 context.register_channel('Channel 1')
 context.register_channel('Channel 2')
-
-analysisWindow = QtGui.QMainWindow()
-area = DockArea()
-analysisWindow.setCentralWidget(area)
-
-path = 'protocols/test.lua'
-if len(sys.argv) > 1:
-	path = sys.argv[1]
-
-launcher = LuaLauncher(context, path, area)
-
-toolbar = QtGui.QToolBar()
-saveAction = toolbar.addAction('Save Layout')
-saveAction.triggered.connect(launcher.save_layout)
-restoreAction = toolbar.addAction('Restore Layout')
-restoreAction.triggered.connect(launcher.restore_layout)
-analysisWindow.addToolBar(toolbar)
-
-analysisWindow.show()
 
 sourceThread = UDPThread()
 
@@ -46,14 +26,61 @@ def handlePacket(packet):
 sourceThread.newPacket.connect(handlePacket)
 sourceThread.start()
 
-def updateGUI():
-	for block in launcher.guiBlocks:
-		block.updateGUI()
+class LauncherWindow(QtGui.QMainWindow):
+	def __init__(self, context):
+		super(LauncherWindow, self).__init__()
+		self.context = context
+		self.launcher = None
+
+		self.dockarea = DockArea()
+		self.setCentralWidget(self.dockarea)
+
+		toolbar = QtGui.QToolBar()
+
+		openIcon = self.style().standardIcon(QtGui.QStyle.SP_DirOpenIcon)
+		openAction = toolbar.addAction(openIcon, 'Load Protocol')
+		openAction.triggered.connect(self.open_dialog)
+
+		saveAction = toolbar.addAction('Save Layout')
+		saveAction.triggered.connect(self.save_layout)
+		restoreAction = toolbar.addAction('Restore Layout')
+		restoreAction.triggered.connect(self.restore_layout)
+		self.addToolBar(toolbar)
+
+		guiTimer = QtCore.QTimer(self)
+		guiTimer.timeout.connect(self.updateGUI)
+		guiTimer.start(0)
+
+	def save_layout(self):
+		if self.launcher:
+			self.launcher.save_layout()
+
+	def restore_layout(self):
+		if self.launcher:
+			self.launcher.restore_layout()
+
+	def load_protocol(self, path):
+		self.launcher = LuaLauncher(self.context, path, self.dockarea)
+
+	def open_dialog(self):
+		filename, extension = QtGui.QFileDialog.getOpenFileName(self, directory='protocols', filter='*.lua')
+		if filename:
+			self.load_protocol(filename)
 
 
-guiTimer = QtCore.QTimer()
-guiTimer.timeout.connect(updateGUI)
-guiTimer.start(0)
+	def updateGUI(self):
+		if self.launcher:
+			for block in self.launcher.guiBlocks:
+				block.updateGUI()
+
+
+mainWindow = LauncherWindow(context)
+
+if len(sys.argv) > 1:
+	path = sys.argv[1]
+	mainWindow.load_protocol(path)
+
+mainWindow.show()
 
 myApp.exec_()
 sys.exit()
