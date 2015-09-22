@@ -152,4 +152,23 @@ class BDFWriter(object):
 
         yield pad("", 32)       # Reserved
 
+import wave
 
+class WAVReader:
+  def __init__(self, fileobj):
+    self.wave = wave.open(fileobj)
+
+    assert(self.wave.getsampwidth() == 3)
+    assert(self.wave.getframerate() == 250)
+    assert(self.wave.getnchannels() == 8)
+
+  def readPacket(self):
+
+    channels = [0] * 8
+    frame = self.wave.readframes(1)
+    for ch in range(8):
+        data = frame[ch * 3: ch * 3 + 3]
+        data = (b'\xff' if data[0] >> 7 else b'\0') + data
+        channels[ch] = struct.unpack('<i', data)[0]
+
+    return channels
