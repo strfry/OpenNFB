@@ -12,7 +12,7 @@ signal.signal(signal.SIGINT, signal.SIG_DFL)
 source = UDPThread(port=9999)
 
 
-f = wave.open('test.wav', 'w')
+f = wave.open(sys.argv[1], 'w')
 f.setnchannels(8)
 f.setsampwidth(3)
 f.setframerate(250)

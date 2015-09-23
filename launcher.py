@@ -62,7 +62,7 @@ class LuaLauncher(object):
 			self.guiBlocks = lua.eval('setup()')
 			#lua.eval('gui()')
 		except Exception as e:
-			print ('Lua Exception occured: ', e)
+			print ('Lua Exception occured: ', e, type(e))
 
 		for block in self.guiBlocks:
 			dock = Dock(block.name)

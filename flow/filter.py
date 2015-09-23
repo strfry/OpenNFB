@@ -36,71 +36,73 @@ class BandPass(Block):
 	def range(self):
 		return self.lo, self.hi
 
+### Simple Notch filter that works by delaying by half a period
+class NotchDelay(Block):
+	input = Input()
+
+	frequency = Float(50.0)
+	samplerate = Int(250)
+
+	def init(self, input):
+		self.readjust()
+		self.input = input
+		self.output = Signal()
+		self.delayed = Signal()
+
+
+	@on_trait_change("frequency,samplerate")
+	def readjust(self):
+		delay = self.samplerate / self.frequency / 2
+		delay = 3
+		self.delayline = [0] * int(delay) 
+
+	def process(self):
+		for sample in self.input.new:
+			self.delayline[1:] = self.delayline[:-1]
+			self.delayline[0] = sample
+			self.output.append([self.delayline[-1] + sample])
+			self.delayed.append([self.delayline[-1] + self.delayline[-2]])
+
+		self.output.process()
+		self.delayed.process()
+
+
 
 class NotchFilter(Block):
 	input = Input()
 
 	frequency = Float(50.0)
-	notchWidth = Float(0.1)
+
+	# Find out what module_pole is and rename it
+	module_pole = Float(0.95)
 
 	nyquist = Float(125.0)
 
-	@on_trait_change("frequency,notchWidth")
+	@on_trait_change("frequency,module_pole")
 	def compute_filter(self):
-		freqRatio = self.frequency / self.nyquist
-		print (self.frequency, self.nyquist, freqRatio)
-		print (type(self.frequency), type(self.nyquist), type(freqRatio))
+		theta = 2 * np.pi * self.frequency / self.nyquist * 2
+		zero = np.exp(np.array([1j, -1j]) * theta)
+		pole = self.module_pole * zero
 
-		wn = freqRatio
-		r = 0.1
-		B, A = np.zeros(3), np.zeros(3)
-		A[0],A[1],A[2] = 1.0, -2.0*r*np.cos(2*np.pi*wn), r*r
-		B[0],B[1],B[2] = 1.0, -2.0*np.cos(2*np.pi*wn), 1.0
-
-
-		self._filter_b = B
-		self._filter_a = A
-
-		#%Compute zeros
-		#zeros = np.array([np.exp(0+1j *np.pi*freqRatio ), np.exp( 0-1j*np.pi*freqRatio )])
-
-		#%Compute poles
-		#poles = (1-self.notchWidth) * zeros
-
-		#self._filter_b = np.poly( zeros ) # Get moving average filter coefficients
-		#self._filter_a = np.poly( poles ) # Get autoregressive filter coefficients
-
-		self._filter_b, self._filter_a = iirfilter(4, (45. / self.nyquist, 55. / self.nyquist), 'bandstop')
+		self._filter_b = np.poly(zero)
+		self._filter_a = np.poly(pole)
 
 
 	def init(self, input):
+		self.compute_filter()
 		self.input = input
 
 		self.output = Signal()
 
-		self.compute_filter()
 
 
 	def process(self):
 		buffer = self.input.buffer
+		assert self.input.new_samples == 1
+
 		filt = lfilter(self._filter_b, self._filter_a, buffer)
 		self.output.append(filt[-1:])
 		self.output.process()
-
-		#fft = np.fft.fft(self.input.buffer[-256:] * np.hanning(256))
-		#fft[90:110] = 0
-		#fft[120:140] = 0
-		#fft[100:200] = 0
-		#ifft = np.fft.ifft(fft)
-
-		#self.output.append([self.input.buffer[-1]])
-		#self.output.append(np.real(ifft[-1:]))
-		#self.output.process()
-
-
-	@property
-	def range(self):
-		return self.lo, self.hi
 
 
 class DCBlock(Block):

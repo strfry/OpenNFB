@@ -6,11 +6,12 @@ end
 function setup()
 
 	raw = channels[0]
-	ch1 = flow.DCBlock(raw).ac
+	ch1_raw = flow.DCBlock(raw).ac
+	ch1 = flow.NotchFilter(ch1_raw)
 
-	lo,hi = 5, 21
-	ch1 = flow.BandPass(lo, hi, ch1)
-	ch1 = flow.BandPass(lo, hi, ch1)
+	ch1.output.color = 'green'
+
+	lo,hi = 1, 125
 	ch1 = flow.BandPass(lo, hi, ch1)
 	--ch1 = flow.BandPass(lo, hi, ch1)
 
@@ -24,15 +25,18 @@ function setup()
 	peaks.bpm.color = 'red'
 	bpmPlot = flow.Oscilloscope('Beats per Minute', {peaks.bpm})
 
-	--waterfall = flow.Waterfall('ECG Waterfall')
+	waterfall = flow.Waterfall('ECG Waterfall')
+	waterfall.window_size = 256
+	waterfall.hi = 125
 
-	--waterfall.input = ch1
+	waterfall.input = ch1
 
 
 	ch1.output.buffer_size = 256
 
-	return OSC, peakPlot, bpmPlot
+	return OSC, peakPlot, bpmPlot,
+		waterfall
 end-----------------------Auto-Generated config - DO NOT EDIT-----------------------
 function doc_config()
-	return { main = { 'vertical', { { 'dock', 'ECG Plot', { }}, { 'dock', 'Peak Plot', { }}, { 'dock', 'Beats per Minute', { }}}, { sizes = { 158, 159, 158}}}, float = { }}
+	return { main = { 'horizontal', { { 'vertical', { { 'dock', 'ECG Plot', { }}, { 'dock', 'Peak Plot', { }}, { 'dock', 'Beats per Minute', { }}}, { sizes = { 162, 162, 162}}}, { 'dock', 'ECG Waterfall', { }}}, { sizes = { 329, 328}}}, float = { }}
 end

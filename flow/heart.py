@@ -34,7 +34,7 @@ class PulseAnalyzer(Block):
 		self.output.append([s])
 
 		for i, sample in enumerate(self.output.new):
-			new = 0.1 if sample > max * 0.5 else 0.0
+			new = 1.0 if sample > max * 0.7 else 0.0
 			self.pulse.append([new])
 
 			if new > self.pulse.buffer[-2]:
