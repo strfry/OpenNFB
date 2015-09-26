@@ -36,7 +36,9 @@ function setup()
 
 	return OSC, peakPlot, bpmPlot,
 		waterfall
-end-----------------------Auto-Generated config - DO NOT EDIT-----------------------
+end
+
+-----------------------Auto-Generated config - DO NOT EDIT-----------------------
 function doc_config()
-	return { main = { 'horizontal', { { 'vertical', { { 'dock', 'ECG Plot', { }}, { 'dock', 'Peak Plot', { }}, { 'dock', 'Beats per Minute', { }}}, { sizes = { 162, 162, 162}}}, { 'dock', 'ECG Waterfall', { }}}, { sizes = { 329, 328}}}, float = { }}
+	return { main = { 'horizontal', { { 'vertical', { { 'dock', 'ECG Plot', { }}, { 'dock', 'Peak Plot', { }}, { 'dock', 'Beats per Minute', { }}}, { sizes = { 158, 159, 158}}}, { 'dock', 'ECG Waterfall', { }}}, { sizes = { 423, 423}}}, float = { }}
 end

@@ -35,6 +35,25 @@ def to_python(obj):
 	else:
 		return {str(key): to_python(obj[key]) for key in obj}
 
+def getter(obj, attr_name):
+	#print ('getter', obj, attr_name)
+
+	if isinstance(attr_name, int):
+		return obj[attr_name]
+	else:
+		return getattr(obj, attr_name)
+
+def setter(obj, attr_name, value):
+	#print ('setter', obj, attr_name, value)
+
+	attr = getattr(obj, attr_name)
+
+	if isinstance(attr_name, int):
+		obj[attr_name] = value
+	if hasattr(attr, '__item__') or hasattr(attr, '__getitem__'):
+		setattr(obj, attr_name, tuple	(value.values()))
+	else:
+		setattr(obj, attr_name, value)
 
 class LuaLauncher(object):
 	def __init__(self, context, path, dockarea):
@@ -51,7 +70,7 @@ class LuaLauncher(object):
 		self.load_protocol(path)
 
 	def load_protocol(self, path):
-		lua = lupa.LuaRuntime()
+		lua = lupa.LuaRuntime(attribute_handlers=(getter, setter))
 		self.lua = lua
 		lua.globals()["flow"] = flow
 		lua.globals()["channels"] = self.context.get_channels()
@@ -63,6 +82,7 @@ class LuaLauncher(object):
 			#lua.eval('gui()')
 		except Exception as e:
 			print ('Lua Exception occured: ', e, type(e))
+			raise
 
 		for block in self.guiBlocks:
 			dock = Dock(block.name)
@@ -92,7 +112,7 @@ class LuaLauncher(object):
 		# Reload protocol
 		self.load_protocol(self.path)
 
-	config_marker = '-' * 23 + "Auto-Generated config - DO NOT EDIT" + "-" * 23
+	config_marker = '\n\n' + '-' * 23 + "Auto-Generated config - DO NOT EDIT" + "-" * 23
 
 	def save_layout(self):
 		save = to_lua(self.dockarea.saveState())
