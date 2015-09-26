@@ -7,6 +7,7 @@ from .display import *
 from .filter import *
 from .threshold import *
 
+from .clock import *
 from .heart import *
 #from .video import *
 

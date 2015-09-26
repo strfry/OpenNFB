@@ -74,7 +74,7 @@ class NotchFilter(Block):
 	frequency = Float(50.0)
 
 	# Find out what module_pole is and rename it
-	module_pole = Float(0.95)
+	module_pole = Float(0.9)
 
 	nyquist = Float(125.0)
 

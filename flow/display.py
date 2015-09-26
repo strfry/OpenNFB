@@ -4,12 +4,15 @@ from flow import Block, Signal, Input
 import pyqtgraph as pg
 from pyqtgraph import QtGui
 import numpy as np
+from scipy.signal import welch
 
-from traits.api import Bool, List, on_trait_change, Int, Float, CFloat, Enum, Trait, Str
+from traits.api import Bool, List, on_trait_change, Int, Float, CFloat, Enum, Trait, Str, Tuple
 
 class Oscilloscope(Block):
 
     autoscale = Bool(True)
+    #yrange = List(Float, [0.0, 1.0], minlen=2, maxlen=2)
+    yrange = Tuple(Float, Float)
     channels = List(Input())
     name = Str()
 
@@ -18,10 +21,8 @@ class Oscilloscope(Block):
         self._plot_widget.block = self
 
         self.plots = {}
-
-        self._autoscale_changed()
-
         self.name = name
+        self.scale_changed()
 
         # Workaround for lua tables
         if hasattr(channels, 'values'):
@@ -41,7 +42,10 @@ class Oscilloscope(Block):
             plot.setPen(QtGui.QColor(channel.color))
             self.plots[channel] = plot
 
-    def _autoscale_changed(self):
+    @on_trait_change('autoscale,yrange')
+    def scale_changed(self):
+        self._plot_widget.setYRange(*self.yrange)
+
         self._plot_widget.enableAutoRange('y', 0.95 if self.autoscale else False)
 
 
@@ -143,7 +147,6 @@ class BarSpectrogram(Block):
         self.bars = pg.BarGraphItem()
 
         self.setup_range()
-        self.plot.addItem(self.bars)
 
         # TODO: Better autoranging features
         #self.plot.enableAutoRange('xy', False)
@@ -169,6 +172,7 @@ class BarSpectrogram(Block):
         self.bars = pg.BarGraphItem(x=x, height=range(num_bars), width=1.0)
         
         self.bars.setOpts(brushes=[pg.hsvColor(float(x) / num_bars) for x in range(num_bars)])
+        self.plot.addItem(self.bars)
 
     def process(self):
         pass
@@ -208,9 +212,12 @@ class Waterfall(Block):
 
     def init(self, name):
         self.name = name
-        
+
         self.autoscale_button = QtGui.QCheckBox('Autoscale')
         self.autoscale_button.setCheckState(True)
+
+        self.welch_button = QtGui.QCheckBox('Use Welch')
+        self.welch_button.setCheckState(False)
 
         self.plot_widget = pg.PlotWidget(title=name)
         self.plot_widget.block = self
@@ -288,8 +295,13 @@ class Waterfall(Block):
         else:
             return
 
-        C = np.fft.rfft(self.input.buffer[-self.window_size:] * self.window)
-        C = abs(C)
+
+        if self.welch_button.checkState():
+            f, C = welch(self.input.buffer, fs=250, nperseg=self.window_size, scaling='spectrum')
+        else:
+            C = np.fft.rfft(self.input.buffer[-self.window_size:] * self.window)
+            C = abs(C)
+            #C = C*C
         C = C[self.lo_index: self.hi_index]
 
         if self.logarithm:
@@ -312,6 +324,7 @@ class Waterfall(Block):
 
         layout = QtGui.QHBoxLayout()
         layout.addWidget(self.autoscale_button)
+        layout.addWidget(self.welch_button)
 #        layout.addWidget(self.histogram)
 
         config_widget.setLayout(layout)
