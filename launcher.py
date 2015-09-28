@@ -100,7 +100,8 @@ class LuaLauncher(object):
 		del self.lua
 
 		for i in self.guiBlocks:
-			del i.widget().block
+			if hasattr(i, 'block'):
+				del i.widget().block
 		self.guiBlocks = ()
 
 		self.context.clear_signals()

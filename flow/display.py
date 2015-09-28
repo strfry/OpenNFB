@@ -60,6 +60,25 @@ class Oscilloscope(Block):
     def process(self):
         pass
 
+class NumberBox(Block):
+    input = Input()
+
+    def init(self, name, input):
+        self.name = name
+        self.input = input
+        self.label = QtGui.QLabel()
+        self.label.setStyleSheet("QLabel { background-color : red; color : blue; }")
+
+    def widget(self):
+        return self.label
+
+    def updateGUI(self):
+        self.label.setText('%.2f' % self.input.buffer[-1])
+        pass
+
+    def process(self):
+        pass
+
 class Spectrograph(Block):
     CHUNKSZ = Int(256)
     input = Input()

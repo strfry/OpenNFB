@@ -47,9 +47,10 @@ class LauncherWindow(QtGui.QMainWindow):
 		restoreAction.triggered.connect(self.restore_layout)
 		self.addToolBar(toolbar)
 
-		guiTimer = QtCore.QTimer(self)
-		guiTimer.timeout.connect(self.updateGUI)
-		guiTimer.start(0)
+		self.guiTimer = QtCore.QTimer(self)
+		#self.guiTimer.setSingleShot(True)
+		self.guiTimer.timeout.connect(self.updateGUI)
+		self.guiTimer.start(0)
 
 	def save_layout(self):
 		if self.launcher:

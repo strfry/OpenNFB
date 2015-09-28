@@ -11,9 +11,12 @@ class UDPThread(QtCore.QThread):
     self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     self.socket.bind(('127.0.0.1', port))
 
+    self.buffer = []
+
   def run(self):
     while True:
       data, addr = self.socket.recvfrom(1024)
       data = eval(data)
+      
       self.newPacket.emit(eval(str(data)))
       #QtGui.QApplication.instance().processEvents()

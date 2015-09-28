@@ -160,7 +160,7 @@ class Averager(Block):
 	def __init__(self, input):
 		self.output = Signal()
 		self.average = 0.0
-		self.factor = 0.9
+		self.factor = 0.99
 		super(Averager, self).__init__(input=input)
 
 	def process(self):
