@@ -1,8 +1,3 @@
---sample_rate = flow.Signal()
-
-function update_sample_rate(x)
-end
-
 --tc = flow.TestClock(250.0)
 --ch1 = tc.output
 

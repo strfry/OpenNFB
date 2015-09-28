@@ -201,6 +201,12 @@ class Expression(Block):
 	input = Input()
 
 	def init(self, func, *args):
+		# HACK: should not directly reference lupa here
+		import lupa
+		if lupa.lua_type(args) == 'table':
+			args = args.values()
+
+
 		print ('Expression: ', func, args[0])
 		self.func = func
 		self.args = list(args)

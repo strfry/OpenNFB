@@ -50,8 +50,10 @@ def setter(obj, attr_name, value):
 
 	if isinstance(attr_name, int):
 		obj[attr_name] = value
-	if hasattr(attr, '__item__') or hasattr(attr, '__getitem__'):
-		setattr(obj, attr_name, tuple	(value.values()))
+	elif isinstance(attr, str):
+		setattr(obj, attr_name, value)		
+	elif hasattr(attr, '__item__') or hasattr(attr, '__getitem__'):
+		setattr(obj, attr_name, tuple(value.values()))
 	else:
 		setattr(obj, attr_name, value)
 

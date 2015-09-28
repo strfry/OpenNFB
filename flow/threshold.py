@@ -28,6 +28,7 @@ class Threshold(Block):
 
 		self.signal = Signal(buffer_size=epoch_samples)
 		self.passfail = Signal()
+		self.ratio = Signal()
 
 		self.threshold = 1.0
 		self.high_threshold = 0.0
@@ -110,6 +111,9 @@ class Threshold(Block):
 
 		success = False
 
+		self.ratio.append([avg / self.threshold])
+		self.ratio.process()
+
 		if self.mode == 'decrease':
 			if avg < self.threshold:
 				success = True
@@ -120,7 +124,7 @@ class Threshold(Block):
 			if avg > self.threshold and avg < self.high_threshold:
 				success = True
 
-		self.passfail.append([success])
+		self.passfail.append([float(success)])
 		self.passfail.process()
 
 

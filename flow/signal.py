@@ -7,6 +7,8 @@ class Signal(HasTraits):
 
 	buffer_size = Int(256)
 
+	sample_rate = Int(250)
+
 	def __init__(self, label='', **config):
 		super(Signal, self).__init__(**config)
 
