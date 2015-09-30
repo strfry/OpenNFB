@@ -9,6 +9,7 @@ class UDPThread(QtCore.QThread):
     super(UDPThread, self).__init__()
 
     self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
     self.socket.bind(('127.0.0.1', port))
 
     self.buffer = []

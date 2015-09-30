@@ -76,6 +76,7 @@ class LuaLauncher(object):
 		self.lua = lua
 		lua.globals()["flow"] = flow
 		lua.globals()["channels"] = self.context.get_channels()
+		lua.globals()["context"] = self.context
 		source = open(path).read()
 
 		try:
@@ -134,6 +135,9 @@ class LuaLauncher(object):
 		writer.close()
 
 	def restore_layout(self):
-		state = to_python(self.lua.eval('doc_config()'))
-		self.dockarea.restoreState(state)
+		try:
+			state = to_python(self.lua.eval('doc_config()'))
+			self.dockarea.restoreState(state)
+		except:
+			print ('Sorry, can not restore dock state...')
 

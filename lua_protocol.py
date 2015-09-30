@@ -13,14 +13,14 @@ _signal.signal(_signal.SIGINT, _signal.SIG_DFL)
 myApp = QtGui.QApplication(sys.argv)
 
 context = flow.Context()
-context.register_channel('Channel 1')
-context.register_channel('Channel 2')
+context.register_channel(0, 'Channel 1')
+context.register_channel(1, 'Channel 2')
 
 sourceThread = UDPThread()
 
 def handlePacket(packet):
-	context.append_channel_data('Channel 1', [packet[0]])
-	context.append_channel_data('Channel 2', [packet[1]])
+	context.append_channel_data(0, [packet[0]])
+	context.append_channel_data(1, [packet[1]])
 	context.process()
 
 sourceThread.newPacket.connect(handlePacket)

@@ -14,10 +14,10 @@ class Threshold(Block):
 	auto_mode = Bool(True)
 	mode = Enum('increase', 'decrease', 'range')
 
-	auto_target = Float(90.)
+	auto_target = Float(0.90)
 
-	low_target = Float(90)
-	high_target = Float(90)
+	low_target = Float(0.90)
+	high_target = Float(0.90)
 
 
 	def init(self, name, input):
@@ -104,10 +104,10 @@ class Threshold(Block):
 			if self.mode == 'decrease':
 				self.threshold = np.percentile(self.signal.buffer, self.auto_target)
 			elif self.mode == 'increase':
-				self.threshold = np.percentile(self.signal.buffer, 100 - self.auto_target)
+				self.threshold = np.percentile(self.signal.buffer, 1.0 - self.auto_target)
 			else:
 				self.high_threshold = np.percentile(self.signal.buffer, self.high_target)
-				self.threshold = np.percentile(self.signal.buffer, 100 - self.low_target)
+				self.threshold = np.percentile(self.signal.buffer, 1.0 - self.low_target)
 
 		success = False
 

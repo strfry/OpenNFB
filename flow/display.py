@@ -67,7 +67,7 @@ class NumberBox(Block):
         self.name = name
         self.input = input
         self.label = QtGui.QLabel()
-        self.label.setStyleSheet("QLabel { background-color : white; color : black; }")
+        self.label.setStyleSheet("QLabel { background-color : black; color : white; }")
 
     def widget(self):
         return self.label

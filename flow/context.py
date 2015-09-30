@@ -23,11 +23,11 @@ class Context(object):
         for channel in self.input_channels.values():
             channel.clear_connections()
 
-    def register_channel(self, channel_name):
-        self.input_channels[channel_name] = Signal(label=channel_name)
+    def register_channel(self, idx, channel_name):
+        self.input_channels[idx] = Signal(name=channel_name)
 
-    def append_channel_data(self, channel_name, data):
-        self.input_channels[channel_name].append(data)
+    def append_channel_data(self, idx, data):
+        self.input_channels[idx].append(data)
 
     def get_channels(self):
         return list(self.input_channels.values())
@@ -40,8 +40,8 @@ class Context(object):
             channel.process()
         pass
 
-    def get_channel(self, name, **config):
-        channel = self.input_channels[name]
+    def get_channel(self, idx, **config):
+        channel = self.input_channels[idx]
         # TODO: Make a copy, do not overwrite config
         channel.trait_set(**config)
         

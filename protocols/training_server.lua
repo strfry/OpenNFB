@@ -17,6 +17,8 @@ function setup()
 	raw = flow.NotchFilter(raw)
 	raw = flow.DCBlock(raw).ac
 
+	rawOsc = flow.Oscilloscope('Raw', {flow.NotchFilter(channels[0])})
+
 	SPEC = flow.BarSpectrogram('Spectrogram', raw)
 
 	lowInhibitBand = flow.BandPass(lowInhibitRange[1], lowInhibitRange[2], raw)
@@ -28,42 +30,48 @@ function setup()
 	artifactInhibit = flow.Threshold('Artifact Inhibit', flow.RMS(raw))
 	artifactInhibit.mode = 'decrease'
 	artifactInhibit.auto_mode = false
+	artifactInhibit.threshold = 1000
+	-- TODO: AI threshold target
 
-	liTreshold = flow.Threshold('Low Inhibit', flow.RMS(lowInhibitBand))
-	liTreshold.auto_target = 0.85
-	liTreshold.mode = 'decrease'
+	liThreshold = flow.Threshold('Low Inhibit', flow.RMS(lowInhibitBand))
+	liThreshold.auto_target = .85
+	liThreshold.mode = 'decrease'
 
 	-- lowInhibitAverage = 
 
 	rThreshold = flow.Threshold('Reward', flow.RMS(rewardBand))
-	rThreshold.auto_target = 0.75
+	rThreshold.auto_target = .75
 	rThreshold.mode = 'increase'
 
 	hiThreshold = flow.Threshold('High Inhibit', highInhibitBand)
-	hiThreshold.auto_target = 0.95
+	hiThreshold.auto_target = .95
 	hiThreshold.mode = 'decrease'
 
 	rewardRatio = flow.Expression(function(x) return x * 2 - 1 end, rThreshold.ratio)
 
 	flow.Expression(function(x, y) return x + min(y, 1) - 1 end, artifactInhibit.passfail, rewardRatio)
 
-	combinedInhibit = flow.Expression(function(x, y) return x and y end,
-		liTreshold.passfail, artifactInhibit.passfail)
+	combinedInhibit = flow.Expression(function(x, y) return x and x end,
+		liThreshold.passfail, artifactInhibit.passfail)
+
+	combinedInhibit = artifactInhibit.passfail
 
 	combinedRatio = flow.Expression(function(x, y) return min(x, 1) + y - 1 end,
 		rewardRatio, combinedInhibit)
 
 	meter1 = flow.NumberBox('Reward Ratio', rewardRatio)
 	meter2 = flow.NumberBox('Combined Ratio', combinedRatio)
+	meter3 = flow.NumberBox('Combined Inhibit', combinedInhibit)
 
-	flow.BEServer({rewardRatio})
+	flow.BEServer({rewardRatio, combinedRatio})
 
-	return OSC, SPEC, meter1, meter2
+	return rawOsc, OSC, SPEC, meter1, meter2, meter3
 end
+
 
 
 
 -----------------------Auto-Generated config - DO NOT EDIT-----------------------
 function doc_config()
-	return { float = { }, main = { 'vertical', { { 'dock', 'Oscilloscope', { }}, { 'horizontal', { { 'dock', 'Spectrogram', { }}, { 'vertical', { { 'dock', 'Reward Ratio', { }}, { 'dock', 'Combined Ratio', { }}}, { sizes = { 127, 126}}}}, { sizes = { 493, 140}}}}, { sizes = { 378, 260}}}}
+	return { main = { 'vertical', { { 'dock', 'Raw', { }}, { 'dock', 'Oscilloscope', { }}, { 'horizontal', { { 'dock', 'Spectrogram', { }}, { 'vertical', { { 'dock', 'Reward Ratio', { }}, { 'dock', 'Combined Ratio', { }}, { 'dock', 'Combined Inhibit', { }}}, { sizes = { 89, 90, 89}}}}, { sizes = { 509, 124}}}}, { sizes = { 126, 225, 282}}}, float = { }}
 end

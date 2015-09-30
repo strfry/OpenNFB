@@ -194,7 +194,7 @@ class Trendline(Block):
 
 			self.output.append([avg])
 			self.output.process()
-
+			
 
 class Expression(Block):
 	args = List(Input)
@@ -207,12 +207,12 @@ class Expression(Block):
 			args = args.values()
 
 
-		print ('Expression: ', func, args[0])
+		print ('Expression: ', func, args)
 		self.func = func
 		self.args = list(args)
 
 		# Workaround for list event bug 
-		self.input = args[0]
+		self.input = self.args[0]
 
 		self.output = Signal()
 
