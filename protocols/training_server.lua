@@ -17,8 +17,6 @@ function setup()
 	raw = flow.NotchFilter(raw)
 	raw = flow.DCBlock(raw).ac
 
-	rawOsc = flow.Oscilloscope('Raw', {flow.NotchFilter(channels[0])})
-
 	SPEC = flow.BarSpectrogram('Spectrogram', raw)
 
 	lowInhibitBand = flow.BandPass(lowInhibitRange[1], lowInhibitRange[2], raw)
@@ -37,8 +35,6 @@ function setup()
 	liThreshold.auto_target = .85
 	liThreshold.mode = 'decrease'
 
-	-- lowInhibitAverage = 
-
 	rThreshold = flow.Threshold('Reward', flow.RMS(rewardBand))
 	rThreshold.auto_target = .75
 	rThreshold.mode = 'increase'
@@ -47,25 +43,54 @@ function setup()
 	hiThreshold.auto_target = .95
 	hiThreshold.mode = 'decrease'
 
-	rewardRatio = flow.Expression(function(x) return x * 2 - 1 end, rThreshold.ratio)
 
-	flow.Expression(function(x, y) return x + min(y, 1) - 1 end, artifactInhibit.passfail, rewardRatio)
+	function ratioRangeFunction(x)
+		return 1.0 - ((x * 2.8571) - 1.8571)
+	end
+
+	liRatio = flow.Expression(ratioRangeFunction, liThreshold.ratio)
+	hiRatio = flow.Expression(ratioRangeFunction, hiThreshold.ratio)
+
+	inhibitRatio = flow.Expression(function(x, y, z) return ((min(x,1) + min(y,1)) / 2) + z - 1 end,
+		liRatio, hiRatio, artifactInhibit.passfail)
+
+
+	rewardRatio = flow.Expression(function(x) return x * 2 - 1 end, rThreshold.ratio)
+	rewardRatio = flow.Expression(function (x, y) return (x + min(y,1)) - 1 end,
+		artifactInhibit.passfail, rewardRatio)
 
 	combinedInhibit = flow.Expression(function(x, y) return x and x end,
 		liThreshold.passfail, artifactInhibit.passfail)
 
-	combinedInhibit = artifactInhibit.passfail
 
 	combinedRatio = flow.Expression(function(x, y) return min(x, 1) + y - 1 end,
 		rewardRatio, combinedInhibit)
 
+	rewardThreshold = flow.Expression(function(x, y) return x and y end,
+		artifactInhibit.passfail, rThreshold.passfail)
+
+	combinedThreshold = flow.Expression(function(x, y) return x and y end,
+		rewardThreshold, combinedInhibit)
+
+
+	combinedRatio.output.name = 'Combined Ratio'
+	combinedThreshold.output.name =  'Combined Thresh'
+	inhibitRatio.output.name = 'Inhibit Ratio'
+	combinedInhibit.output.name = 'Inhibit Thresh'
+	rewardRatio.output.name = 'Reward Ratio'
+	rewardThreshold.output.name = 'Reward Thresh'
+
 	meter1 = flow.NumberBox('Reward Ratio', rewardRatio)
 	meter2 = flow.NumberBox('Combined Ratio', combinedRatio)
-	meter3 = flow.NumberBox('Combined Inhibit', combinedInhibit)
+	meter3 = flow.NumberBox('Inhibit Ratio', inhibitRatio)
+	meter4 = flow.NumberBox('Combined Inhibit (Thresh)', combinedInhibit)
+	meter5= flow.NumberBox('Reward Ratio', rewardRatio)
+	meter6 = flow.NumberBox('Reward Thresh', rewardThreshold)
 
-	flow.BEServer({rewardRatio, combinedRatio})
+	flow.BEServer({combinedRatio, combinedThreshold, inhibitRatio, combinedInhibit,
+		rewardRatio, rewardThreshold})
 
-	return rawOsc, OSC, SPEC, meter1, meter2, meter3
+	return OSC, SPEC, meter1, meter2, meter3, meter4, meter5, meter6
 end
 
 
@@ -73,5 +98,5 @@ end
 
 -----------------------Auto-Generated config - DO NOT EDIT-----------------------
 function doc_config()
-	return { main = { 'vertical', { { 'dock', 'Raw', { }}, { 'dock', 'Oscilloscope', { }}, { 'horizontal', { { 'dock', 'Spectrogram', { }}, { 'vertical', { { 'dock', 'Reward Ratio', { }}, { 'dock', 'Combined Ratio', { }}, { 'dock', 'Combined Inhibit', { }}}, { sizes = { 89, 90, 89}}}}, { sizes = { 509, 124}}}}, { sizes = { 126, 225, 282}}}, float = { }}
+	return { float = { }, main = { 'vertical', { { 'dock', 'Oscilloscope', { }}, { 'horizontal', { { 'dock', 'Spectrogram', { }}, { 'vertical', { { 'dock', 'Reward Ratio', { }}, { 'dock', 'Combined Ratio', { }}, { 'dock', 'Inhibit Ratio', { }}, { 'dock', 'Combined Inhibit (Thresh)', { }}, { 'dock', 'Reward Ratio', { }}, { 'dock', 'Reward Thresh', { }}}, { sizes = { 39, 39, 38, 39, 39, 39}}}}, { sizes = { 544, 89}}}}, { sizes = { 367, 268}}}}
 end

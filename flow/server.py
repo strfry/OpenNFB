@@ -113,6 +113,14 @@ class BEServer(Block):
 
 
     def socket_thread(self):
+        import rt_thread
+        nperiod = int(1.0 / 60 * 1000000000)
+        ncomputation = nperiod // 10
+        nconstraint = ncomputation * 2
+        #rt_thread.set_realtime(nperiod, ncomputation, nconstraint)
+
+
+
         try:
             global client_socket
             if not client_socket:
@@ -138,6 +146,7 @@ class BEServer(Block):
                     self._send_data(1, newdata)
 
                 time.sleep(0)
+                #rt_thread.thread_yield()
         except BrokenPipeError:
             client_socket = None
             self.socket_thread()

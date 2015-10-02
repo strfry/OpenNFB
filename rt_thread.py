@@ -1,5 +1,5 @@
 from ctypes import cdll, Structure, c_uint, c_int, c_bool, c_voidp, sizeof, byref
-
+import sys
 
 class thread_time_constraint_policy(Structure):
 	_fields_ = [
@@ -18,11 +18,13 @@ THREAD_TIME_CONSTRAINT_POLICY_COUNT = c_uint(sizeof(thread_time_constraint_polic
 THREAD_PRECEDENCE_POLICY = c_uint(3)
 THREAD_PRECEDENCE_POLICY_COUNT = c_uint(sizeof(thread_precedence_policy) // sizeof(c_uint))
 
+lib = None
 
 def set_realtime(period, computation, constraint):
 	if sys.platform != 'darwin':
 		print ('Warning: set_realtime not implemented on this platform')
 
+	global lib
 	lib = cdll.LoadLibrary('libSystem.B.dylib')
 	lib.pthread_self.restype = c_voidp
 

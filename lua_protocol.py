@@ -50,7 +50,7 @@ class LauncherWindow(QtGui.QMainWindow):
 		self.guiTimer = QtCore.QTimer(self)
 		#self.guiTimer.setSingleShot(True)
 		self.guiTimer.timeout.connect(self.updateGUI)
-		self.guiTimer.start(0)
+		self.guiTimer.start(500)
 
 	def save_layout(self):
 		if self.launcher:

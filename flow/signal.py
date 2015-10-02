@@ -3,16 +3,16 @@ from traits.api import HasTraits, Str, Int
 
 class Signal(HasTraits):
 	color = Str("white")
-	label = Str()
+	name = Str()
 
 	buffer_size = Int(256)
 
 	sample_rate = Int(250)
 
-	def __init__(self, label='', **config):
+	def __init__(self, name='', **config):
 		super(Signal, self).__init__(**config)
 
-		self.label = label
+		self.name = name
 
 		latency = 0
 		self.connections_ = set()
