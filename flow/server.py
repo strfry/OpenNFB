@@ -33,13 +33,6 @@ class BEServer(Block):
 
 
         threading.Thread(target=self.socket_thread).start()
-        #self.socket_thread()
-
-    @on_trait_change('channels[]')
-    def channels_changed(self, object, name, old, new):
-        #for idx, ch in new:
-        #    self._add_channel(ch)
-        pass
 
 
     # Add header and send to clients
@@ -53,28 +46,18 @@ class BEServer(Block):
 
         packet += b'\n'
 
-        #client_socket.setsockopt(socket.SOL_TCP, socket.TCP_NODELAY, 1)
-        #self.client.send(packet)
         client_socket.send(packet)
 
-        # Disable Nagle's algorithm
-        #client_socket.setsockopt(socket.SOL_TCP, socket.TCP_NODELAY, 1)
-
-        #print ('sent packet', ':'.join(['%02x' % c for c in packet]))
-
-
     def _send_data(self, index, data):
+
+
         packet = bytes()
         packet += struct.pack('<i', CMD_CHANNEL_DATA)
         packet += struct.pack('<i', index)
         packet += struct.pack('<i', len(data))
 
-
-
-        import random
         for sample in data:
             packet += struct.pack('<d', sample)
-            packet += struct.pack('<d', (random.random()-0.1) * 10e-9)
 
         self._send_packet(packet)
 
@@ -88,16 +71,16 @@ class BEServer(Block):
         self._send_packet(packet)
 
 
-    def _add_channel(self, channel, index):
+    def _add_channel(self, sample_rate, index):
         packet = bytes()
         packet += struct.pack('<i', CMD_ADD_CHANNEL)
         packet += struct.pack('<i', index)
-        packet += struct.pack('<d', channel.sample_rate)
+        packet += struct.pack('<d', sample_rate)
 
         name = 'Channel %d' % (index + 1)
 
-        if hasattr(channel, 'name'):
-            name = channel.name
+        #if hasattr(channel, 'name'):
+        #    name = channel.name
 
         name = name.encode('utf-8') + b'\0'
 
@@ -113,21 +96,14 @@ class BEServer(Block):
 
 
     def socket_thread(self):
-        import rt_thread
-        nperiod = int(1.0 / 60 * 1000000000)
-        ncomputation = nperiod // 10
-        nconstraint = ncomputation * 2
-        #rt_thread.set_realtime(nperiod, ncomputation, nconstraint)
-
-
-
         try:
             global client_socket
             if not client_socket:
                 client_socket = main_socket.accept()[0]
 
-            for idx, ch in enumerate(self.channels):
-                self._add_channel(ch, idx+1)
+            #for idx, ch in enumerate(self.channels):
+                #self._add_channel(ch, idx+1)
+            self._add_channel(250, 0)
 
             self._stop()
             self._start()
@@ -138,6 +114,7 @@ class BEServer(Block):
                 ts = self.channels[0].timestamp
                 if sent_timestamp < ts:
                     l = ts - sent_timestamp
+                    #l = min(l, 2)
 
                     sent_timestamp += l
 
