@@ -7,6 +7,7 @@ import socket, struct
 import threading, time
 
 CMD_ADD_CHANNEL = 1
+CMD_REMOVE_CHANNEL = 2
 CMD_CHANNEL_DATA = 5
 CMD_START = 6
 CMD_STOP = 8
@@ -50,6 +51,8 @@ class BEServer(Block):
 
     def _send_data(self, index, data):
 
+        print ('send_data to', index, data)
+
 
         packet = bytes()
         packet += struct.pack('<i', CMD_CHANNEL_DATA)
@@ -71,16 +74,16 @@ class BEServer(Block):
         self._send_packet(packet)
 
 
-    def _add_channel(self, sample_rate, index):
+    def _add_channel(self, channel, index):
         packet = bytes()
         packet += struct.pack('<i', CMD_ADD_CHANNEL)
         packet += struct.pack('<i', index)
-        packet += struct.pack('<d', sample_rate)
+        packet += struct.pack('<d', channel.sample_rate)
 
         name = 'Channel %d' % (index + 1)
 
-        #if hasattr(channel, 'name'):
-        #    name = channel.name
+        if hasattr(channel, 'name'):
+            name = channel.name
 
         name = name.encode('utf-8') + b'\0'
 
@@ -90,7 +93,15 @@ class BEServer(Block):
 
         self._send_packet(packet)
 
-        print ('add channel', packet)
+        print ('add channel', name, index)
+
+    def _remove_channel(self, index):
+        packet = bytes()
+        packet += struct.pack('<i', CMD_REMOVE_CHANNEL)
+        packet += struct.pack('<i', index)
+
+        self._send_packet(packet)
+
 
 
 
@@ -101,11 +112,15 @@ class BEServer(Block):
             if not client_socket:
                 client_socket = main_socket.accept()[0]
 
-            #for idx, ch in enumerate(self.channels):
-                #self._add_channel(ch, idx+1)
-            self._add_channel(250, 0)
 
             self._stop()
+
+            #for i in range(32):
+            #    self._remove_channel(i)
+
+            for idx, ch in enumerate(self.channels):
+                self._add_channel(ch, idx)
+
             self._start()
 
             sent_timestamp = self.channels[0].timestamp
@@ -118,7 +133,7 @@ class BEServer(Block):
 
                     sent_timestamp += l
 
-                    newdata = self.channels[0].buffer[-l:]
+                    newdata = self.channels[3].buffer[-l:]
 
                     self._send_data(1, newdata)
 
