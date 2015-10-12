@@ -5,11 +5,57 @@ from pyqtgraph import QtGui, QtCore
 from traits.api import Float, Int, Enum, Bool
 import numpy as np
 
+class ThresholdWidget(QtGui.QWidget):
+	MAX = 1000
+
+	def __init__(self, threshold):
+		QtGui.QWidget.__init__(self)
+
+		self.threshold = threshold
+
+	def paintEvent(self, event):
+		painter = QtGui.QPainter(self)
+
+		width = self.width()
+		height = self.height()
+
+		top, bottom = height * .1, height * .8
+		left, right = width * .1, width * .8
+
+		rect = QtCore.QRect(left, top, right, bottom)		
+		painter.fillRect(rect, QtGui.QColor('black'))
+
+		#painter.setWindow(rect)
+
+		dist = bottom - top
+
+		relval = self.threshold.signal.buffer[-1] / self.MAX
+		relval = min(1.0, relval)
+
+		reltop = (1.0 - relval) * bottom + top
+		relbottom = height * 0.9 - reltop 
+
+		rect = QtCore.QRect(left, reltop, right, relbottom)
+
+		color = QtGui.QColor('green' if self.threshold.passfail.buffer[-1] else 'red')
+		painter.fillRect(rect, color)
+
+
+		thr_height = self.threshold.threshold / self.MAX
+
+		thr_top = (1.0 - thr_height) * bottom + top
+
+		rect = QtCore.QRect(left, thr_top, right, 2)		
+		painter.fillRect(rect, QtGui.QColor('white'))
+
+
+		#painter.setBrush
+
 class Threshold(Block):
 	input = Input()
 
 	average_period = Float(0.35)
-	epoch = Float(13.0)
+	epoch = Float(3.0)
 
 	auto_mode = Bool(True)
 	mode = Enum('increase', 'decrease', 'range')
@@ -60,7 +106,11 @@ class Threshold(Block):
 		self.button = QtGui.QPushButton("config")
 		self.button.clicked.connect(self.configure_traits)
 
+		self._widget = ThresholdWidget(self)
+
 	def widget(self):
+		return self._widget
+
 		w = QtGui.QGroupBox()
 		w.setTitle(self.name)
 
@@ -76,6 +126,8 @@ class Threshold(Block):
 		return w
 
 	def updateGUI(self):
+		self._widget.update()
+		return
 		self.bar.setValue(self.signal.last)
 
 		self.bar.setProperty('pass', self.passfail.last)
@@ -102,12 +154,12 @@ class Threshold(Block):
 			self.calc_cnt = 0
 
 			if self.mode == 'decrease':
-				self.threshold = np.percentile(self.signal.buffer, self.auto_target)
+				self.threshold = np.percentile(self.signal.buffer, 100 * self.auto_target)
 			elif self.mode == 'increase':
-				self.threshold = np.percentile(self.signal.buffer, 1.0 - self.auto_target)
+				self.threshold = np.percentile(self.signal.buffer, 100 - 100 * self.auto_target)
 			else:
 				self.high_threshold = np.percentile(self.signal.buffer, self.high_target)
-				self.threshold = np.percentile(self.signal.buffer, 1.0 - self.low_target)
+				self.threshold = np.percentile(self.signal.buffer, 100 - 100 * self.low_target)
 
 		success = False
 

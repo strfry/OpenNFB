@@ -51,7 +51,7 @@ class BEServer(Block):
 
     def _send_data(self, index, data):
 
-        print ('send_data to', index, data)
+        #print ('send_data to', index, data)
 
 
         packet = bytes()
@@ -129,13 +129,15 @@ class BEServer(Block):
                 ts = self.channels[0].timestamp
                 if sent_timestamp < ts:
                     l = ts - sent_timestamp
+                    sent_timestamp += l
                     #l = min(l, 2)
 
-                    sent_timestamp += l
+                    ## Assume same clocking on all signals
 
-                    newdata = self.channels[3].buffer[-l:]
 
-                    self._send_data(1, newdata)
+                    for idx, ch in enumerate(self.channels):
+                        newdata = ch.buffer[-l:]
+                        self._send_data(idx, newdata)
 
                 time.sleep(0)
                 #rt_thread.thread_yield()

@@ -21,7 +21,6 @@ f.setframerate(250)
 def handle_packet(packet):
 	for ch in packet:
 		data = struct.pack('<i', ch)
-		print (ch)
 		f.writeframes(data[1:])
 		#print (len(data[:1]))
 

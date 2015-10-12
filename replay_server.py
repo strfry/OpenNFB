@@ -1,5 +1,5 @@
 import time
-import sys, signal
+import sys, signal, struct
 import socket
 import json
 
@@ -15,7 +15,8 @@ sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 def send_packet(channels):
 	data = json.dumps(channels)
 	sock.sendto(data.encode('utf-8'), ('localhost', 8888))
-	sock.sendto(data.encode('utf-8'), ('localhost', 9999))
+	data = struct.pack('=f', channels[0] * 0.022351744455307063 / 1000)
+	sock.sendto(data, ('localhost', 9999))
 
 filename = sys.argv[1]
 filehandler = open(filename, 'rb')

@@ -27,8 +27,9 @@ from optparse import OptionParser
 import sip
 import sys
 
-from blocks import BEServer
+from blocks import BEServer, Threshold
 import numpy
+import scipy.signal
 
 import signal
 signal.signal(signal.SIGINT, signal.SIG_DFL)
@@ -73,6 +74,25 @@ class TestSource(gr.basic_block):
 
         return n_items
 
+class TestSink(gr.sync_block):
+    def __init__(self):
+        super(TestSink, self).__init__('TestSink', [numpy.float32], [])
+
+        self.cnt = 0
+
+    def work(self, input_items, output_items):
+        for i in input_items[0]:
+            self.cnt += 1
+            if self.cnt > 250:
+                print (i)
+                self.cnt = 0
+
+        return len(input_items[0])
+
+
+
+
+
 
 class top_block(gr.top_block, Qt.QWidget):
 
@@ -108,8 +128,8 @@ class top_block(gr.top_block, Qt.QWidget):
         # Blocks
         ##################################################
         self.qtgui_sink_x_0 = qtgui.sink_f(
-        	32, #fftsize
-        	firdes.WIN_BLACKMAN_hARRIS, #wintype
+        	256, #fftsize
+        	firdes.WIN_HANN, #wintype
         	50, #fc
         	samp_rate, #bw
         	"", #name
@@ -121,33 +141,42 @@ class top_block(gr.top_block, Qt.QWidget):
         self.qtgui_sink_x_0.set_update_time(1.0/100)
         self._qtgui_sink_x_0_win = sip.wrapinstance(self.qtgui_sink_x_0.pyqwidget(), Qt.QWidget)
         self.top_layout.addWidget(self._qtgui_sink_x_0_win)
-        
-        #self.qtgui_sink_x_0.enable_rf_freq(False)
-        
-        
           
-        #self.blocks_udp_source_0 = blocks.udp_source(gr.sizeof_float*1, "127.0.0.1", 9999, 1472, True)
-        #self.blocks_udp_source_0 = TestSource()
-        test_source = TestSource()
-        #self.blocks_throttle_0 = blocks.throttle(gr.sizeof_int*1, samp_rate,True)
-        self.band_pass_filter_0 = filter.fir_filter_fff(1, firdes.band_pass(
-        	1, samp_rate, 1, 30, 1, firdes.WIN_HAMMING, 6.76))
+        #test_source = TestSource()
+        test_source = blocks.udp_source(gr.sizeof_float*1, "127.0.0.1", 9999, 1472, True)
+
+
+        # Signal Conditioning: DC Block and 50 Hz Notch Filter
+        dc_blocker = filter.dc_blocker_ff(16, long_form=False)
+        self.connect((test_source, 0), (dc_blocker, 0))
+
+        theta = 2 * numpy.pi * 50 / 250
+        zero = numpy.exp(numpy.array([1j, -1j]) * theta)
+        pole = 0.999 * zero
+
+        #notch_ab = numpy.poly(pole), numpy.poly(zero)
+        #notch_ab = numpy.poly(zero), numpy.poly(pole)
+        notch_ab = scipy.signal.iirfilter(32, [30.0 / 125], btype='low')
+
+        notch_filter = filter.iir_filter_ffd(notch_ab[0], notch_ab[1], oldstyle=False)
+        self.connect((dc_blocker, 0), (notch_filter, 0))
+
+        #test_sink = TestSink()
+        #self.connect((notch_filter, 0), (test_sink, 0))
+
+        total_rms = blocks.rms_ff(alpha=0.2)
+        self.connect((notch_filter, 0), (total_rms, 0))
+
+        threshold1 = Threshold()
+        self.connect((total_rms, 0), (threshold1, 0))
+        #self.connect((total_rms, 0), (self.qtgui_sink_x_0, 0))
+
+        self.connect((threshold1, 0), (blocks.null_sink(4), 0))
+        self.connect((threshold1, 1), (blocks.null_sink(1), 0))
+        self.connect((threshold1, 2), (self.qtgui_sink_x_0, 0))
 
         self.beserver = BEServer()
-
-        ##################################################
-        # Connections
-        ##################################################
-        #self.connect((self.band_pass_filter_0, 0), (self.qtgui_sink_x_0, 0))    
-        #self.connect((self.blocks_throttle_0, 0), (self.band_pass_filter_0, 0))    
-        #self.connect((self.blocks_udp_source_0, 0), (self.blocks_throttle_0, 0))    
-        #self.connect((self.blocks_udp_source_0, 0), (self.band_pass_filter_0, 0))    
-        #self.connect((self.band_pass_filter_0, 0), (self.beserver, 0))
-
-        self.connect((test_source, 0), (self.beserver, 0))
-        self.connect((test_source, 0), (self.qtgui_sink_x_0, 0))
-        #self.connect((self.blocks_udp_source_0, 0), (self.beserver, 0))
-        #self.connect((self.blocks_udp_source_0, 0), (self.qtgui_sink_x_0, 0))    
+        self.connect((threshold1, 2), (self.beserver, 0))
 
 
 

@@ -23,12 +23,17 @@ function setup()
 	rewardBand = flow.BandPass(rewardRange[1], rewardRange[2], raw)
 	highInhibitBand = flow.BandPass(highInhibitRange[1], highInhibitRange[2], raw)
 
-	OSC = flow.Oscilloscope('Oscilloscope', {raw, lowInhibitBand, rewardBand, highInhibitBand})
+	lowInhibitBand.output.color = 'orange'
+	rewardBand.output.color = 'green'
+	highInhibitBand.output.color = 'blue'
+
+	OSC = flow.Oscilloscope('Oscilloscope', {--raw,
+		lowInhibitBand, rewardBand, highInhibitBand})
 
 	artifactInhibit = flow.Threshold('Artifact Inhibit', flow.RMS(raw))
 	artifactInhibit.mode = 'decrease'
 	artifactInhibit.auto_mode = false
-	artifactInhibit.threshold = 1000
+	artifactInhibit.threshold = 5000
 	-- TODO: AI threshold target
 
 	liThreshold = flow.Threshold('Low Inhibit', flow.RMS(lowInhibitBand))
@@ -39,7 +44,7 @@ function setup()
 	rThreshold.auto_target = .75
 	rThreshold.mode = 'increase'
 
-	hiThreshold = flow.Threshold('High Inhibit', highInhibitBand)
+	hiThreshold = flow.Threshold('High Inhibit', flow.RMS(highInhibitBand))
 	hiThreshold.auto_target = .95
 	hiThreshold.mode = 'decrease'
 
@@ -90,13 +95,16 @@ function setup()
 	flow.BEServer({combinedRatio, combinedThreshold, inhibitRatio, combinedInhibit,
 		rewardRatio, rewardThreshold})
 
-	return OSC, SPEC, meter1, meter2, meter3, meter4, meter5, meter6
+	--return OSC, SPEC, meter1, meter2, meter3, meter4, meter5, meter6
+	return OSC, SPEC, artifactInhibit, liThreshold, rThreshold, hiThreshold
 end
+
+
 
 
 
 
 -----------------------Auto-Generated config - DO NOT EDIT-----------------------
 function doc_config()
-	return { float = { }, main = { 'vertical', { { 'dock', 'Oscilloscope', { }}, { 'horizontal', { { 'dock', 'Spectrogram', { }}, { 'vertical', { { 'dock', 'Reward Ratio', { }}, { 'dock', 'Combined Ratio', { }}, { 'dock', 'Inhibit Ratio', { }}, { 'dock', 'Combined Inhibit (Thresh)', { }}, { 'dock', 'Reward Ratio', { }}, { 'dock', 'Reward Thresh', { }}}, { sizes = { 39, 39, 38, 39, 39, 39}}}}, { sizes = { 544, 89}}}}, { sizes = { 367, 268}}}}
+	return { float = { }, main = { 'vertical', { { 'dock', 'Oscilloscope', { }}, { 'horizontal', { { 'dock', 'Spectrogram', { }}, { 'dock', 'Artifact Inhibit', { }}, { 'dock', 'Low Inhibit', { }}, { 'dock', 'Reward', { }}, { 'dock', 'High Inhibit', { }}}, { sizes = { 306, 97, 76, 53, 80}}}}, { sizes = { 241, 241}}}}
 end
