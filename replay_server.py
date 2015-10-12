@@ -5,10 +5,10 @@ import json
 
 from bdf import BDFReader, WAVReader
 
-from PyQt5.QtCore import QTimer, QCoreApplication
+from pyqtgraph import QtCore
 
 signal.signal(signal.SIGINT, signal.SIG_DFL)
-app = QCoreApplication(sys.argv)
+app = QtCore.QCoreApplication(sys.argv)
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
@@ -33,7 +33,7 @@ def handle_timeout():
     else:
     	app.quit()
 
-timer = QTimer()
+timer = QtCore.QTimer()
 timer.timeout.connect(handle_timeout)
 timer.start(1000 / 250)
 
