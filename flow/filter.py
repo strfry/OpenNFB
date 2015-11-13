@@ -210,11 +210,12 @@ class Expression(Block):
 		print ('Expression: ', func, args)
 		self.func = func
 		self.args = list(args)
+		
+		self.output = Signal()
 
 		# Workaround for list event bug 
 		self.input = self.args[0]
 
-		self.output = Signal()
 
 	def _input_changed(self):
 		self.output.copy_traits(self.input, ['label', 'color'])
