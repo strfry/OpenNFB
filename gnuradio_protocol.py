@@ -15,7 +15,7 @@ if __name__ == '__main__':
         except:
             print "Warning: failed to XInitThreads()"
 
-from PyQt4 import Qt
+from PyQt4 import Qt, QtGui
 from gnuradio import blocks
 from gnuradio import eng_notation
 from gnuradio import filter
@@ -27,8 +27,10 @@ from optparse import OptionParser
 import sip
 import sys
 
+import pyqtgraph as pg
+
 from blocks import BEServer, Threshold
-import numpy
+import numpy as np
 import scipy.signal
 
 import signal
@@ -39,60 +41,168 @@ cnt = 0
 import threading, time
 import math
 
-class TestSource(gr.basic_block):
-    def __init__(self):
-        super(TestSource, self).__init__('TestSource', [], [numpy.float32])
+class Input(object):
+    """Attribute type for describing signal inputs of Blocks"""
 
-        self.buffer = []
-        #self.set_auto_consume(False)
+    # A counter used to find out the order of declaration 
+    order = 0
 
-        threading.Thread(target=self.thread_worker).start()
+    def __init__(self, type=np.float32):
+        self.order = Input.order
+        Input.order += 1
+
+        self.type = type
+
+    def __getattr__(self, attrname):
+        if hasattr(self, attrname):
+            return __getattribute__(self, attrname)
+
+        if self.source:
+            return getattr(self.source, attrname)
+
+        raise AttributeError('Input does not have attribute \'' + attrname +
+            '\', nor any sources')
 
 
+class Output(object):
+    """Attribute type for describing signal outputs of Blocks"""
 
-    def thread_worker(self):
-        print ('Starting Thread')
-        while True:
-            global cnt
-            cnt += 1
-            val = (math.sin(cnt / 250.0) + 1 )
-            self.buffer.append(val)
-            time.sleep(1.0 / 250)
+    # A counter used to find out the order of declaration 
+    order = 0
+
+    def __init__(self, source=None, type=np.float32):
+        print ('Output init', source, type)
+        self.order = Input.order
+        Output.order += 1
+
+        self.source = source
+        self.type = type
+
+
+    def __getattr__(self, attrname):
+        print ('p1')
+        #if hasattr(self, attrname):
+        if attrname in self.__dict__:
+            return self.__dict__[attrname]
+
+
+        print ('p2')
+        source = self.__dict__['source']
+
+        print ('p3')
+
+        print ('Output getattr', attrname, source)
+        print ('p4')
+
+        if source:
+            return getattr(source, attrname)
+        print ('p5')
+
+        raise AttributeError('Output does not have attribute \'' + attrname +
+            '\', nor any sources')
+
+
+class Block(object):
+    def __init__(self, *args, **kwargs):
+        inputs = []
+        outputs = []
+
+        for attrname in dir(self):
+            attr = getattr(self, attrname)
+            if type(attr) == Input:
+                inputs.append(attr)
+            elif type(attr) == Output:
+                outputs.append(attr)
+
+        inputs.sort(key=lambda x: x.order)
+        outputs.sort(key=lambda x: x.order)
+
+        if len(args) < len(inputs):
+            raise ValueError('Not enough arguments for input')
+
+        args = list(args)
+        for i, input in enumerate(inputs):
+            input.index = i
+            source = args.pop(0)
+
+            if isinstance(source, Block):
+                source = source.output
+
+            input.source = source
+
+        for i, output in enumerate(outputs):
+            output.index = i
+
+        input_types = [x.type for x in inputs]
+        output_types = [x.type for x in outputs]
+
+        name = self.__class__.__name__
+
+        if hasattr(self, 'general_work'):
+            self.gr_block = gr.basic_block(name, input_types, output_types)
+            self.gr_block.general_work = self.general_work
+
+        self.init(*args, **kwargs)
+
+        assert hasattr(self, 'gr_block')
+
+class InOutBlock(Block):
+    "A base class for the default case of a block with input and one output"
+    input = Input()
+    output = Output(input)
+
+
+class BandPass(InOutBlock):    
+    def init(self, lo, hi): 
+        Wn = [lo / self.input.sample_rate / 2, hi / self.input.sample_rate / 2]
+        filter_ab = scipy.signal.iirfilter(8, Wn, btype='bandpass')
+
+        self.gr_block = filter.iir_filter_ffd(filter_ab[1], filter_ab[0], oldstyle=False)
+
+
+class Oscilloscope(Block):
+    input = Input()
+
+    def init(self, history=512, autoscale=True):
+        name = 'Oscilloscope'
+        self.widget = pg.PlotWidget(title=name)
+        self.widget.block = self
+
+        self.name = name
+
+        self.gr_block.set_history(history)
+
+        self.plot = self.widget.plot()
+        self.plot.setPen(QtGui.QColor(self.input.color))
+        #self.widget.setYRange(*self.yrange)
+
+        self.widget.enableAutoRange('y', 0.95 if autoscale else False)
+
 
     def general_work(self, input_items, output_items):
-        #print ('TestSource', input_items, output_items)
+        print ('Oscilloscope work', len(input_items[0]), output_items, input_items[0][0])
 
-        out = output_items[0]
+        self.gr_block.consume_each(50)
+
+        self.plot.setData(input_items[0])
+        self.widget.update()
+
+        return 0
+
+
+    def updateGUI(self):
+        for channel in self.plots:
+            plot = self.plots[channel]
+            plot.setData(channel.buffer)
+
+class UDPSource(Block):
+    channel1 = Output()
+
+    def init(self):
+        self.channel1.sample_rate = 250.0
+        self.channel1.color = 'orange'
+        self.gr_block = blocks.udp_source(gr.sizeof_float*1, "127.0.0.1", 9999, 1472, True)
         
-        max_items = len(out)
-        n_items = len(self.buffer[:max_items])
-
-        out[:n_items] = self.buffer[:n_items]
-
-        #self.produce(0, len(self.buffer))
-        self.buffer = []
-
-        return n_items
-
-class TestSink(gr.sync_block):
-    def __init__(self):
-        super(TestSink, self).__init__('TestSink', [numpy.float32], [])
-
-        self.cnt = 0
-
-    def work(self, input_items, output_items):
-        for i in input_items[0]:
-            self.cnt += 1
-            if self.cnt > 250:
-                print (i)
-                self.cnt = 0
-
-        return len(input_items[0])
-
-
-
-
-
 
 class top_block(gr.top_block, Qt.QWidget):
 
@@ -120,18 +230,13 @@ class top_block(gr.top_block, Qt.QWidget):
         self.restoreGeometry(self.settings.value("geometry").toByteArray())
 
         ##################################################
-        # Variables
-        ##################################################
-        self.samp_rate = samp_rate = 250
-
-        ##################################################
         # Blocks
         ##################################################
         self.qtgui_sink_x_0 = qtgui.sink_f(
         	256, #fftsize
         	firdes.WIN_HANN, #wintype
         	50, #fc
-        	samp_rate, #bw
+        	250, #bw
         	"", #name
         	True, #plotfreq
         	True, #plotwaterfall
@@ -145,40 +250,40 @@ class top_block(gr.top_block, Qt.QWidget):
         #test_source = TestSource()
         test_source = blocks.udp_source(gr.sizeof_float*1, "127.0.0.1", 9999, 1472, True)
 
+        src = UDPSource()
+        bp = BandPass(src.channel1, 0.0000001, 0.0002)
+        osc = Oscilloscope(bp)
+
+        self.top_layout.addWidget(osc.widget)
+
+
+        self.connect(src.gr_block, bp.gr_block, osc.gr_block)
+        #self.connect(src.gr_block, osc.gr_block)
+
 
         # Signal Conditioning: DC Block and 50 Hz Notch Filter
-        dc_blocker = filter.dc_blocker_ff(16, long_form=False)
-        self.connect((test_source, 0), (dc_blocker, 0))
+        #dc_blocker = filter.dc_blocker_ff(16, long_form=False)
+        #self.connect((test_source, 0), (dc_blocker, 0))
 
-        theta = 2 * numpy.pi * 50 / 250
-        zero = numpy.exp(numpy.array([1j, -1j]) * theta)
+        theta = 2 * np.pi * 50 / 250
+        zero = np.exp(np.array([1j, -1j]) * theta)
         pole = 0.999 * zero
 
         #notch_ab = numpy.poly(pole), numpy.poly(zero)
         #notch_ab = numpy.poly(zero), numpy.poly(pole)
-        notch_ab = scipy.signal.iirfilter(32, [30.0 / 125], btype='low')
+        #notch_ab = scipy.signal.iirfilter(32, [30.0 / 125], btype='low')
 
-        notch_filter = filter.iir_filter_ffd(notch_ab[0], notch_ab[1], oldstyle=False)
-        self.connect((dc_blocker, 0), (notch_filter, 0))
-
-        #test_sink = TestSink()
-        #self.connect((notch_filter, 0), (test_sink, 0))
-
-        total_rms = blocks.rms_ff(alpha=0.2)
-        self.connect((notch_filter, 0), (total_rms, 0))
-
-        threshold1 = Threshold()
-        self.connect((total_rms, 0), (threshold1, 0))
+        #notch_filter = filter.iir_filter_ffd(notch_ab[0], notch_ab[1], oldstyle=False)
+        
+        #total_rms = blocks.rms_ff(alpha=0.2)
+        
+        #threshold1 = Threshold()
+        
         #self.connect((total_rms, 0), (self.qtgui_sink_x_0, 0))
 
-        self.connect((threshold1, 0), (blocks.null_sink(4), 0))
-        self.connect((threshold1, 1), (blocks.null_sink(1), 0))
-        self.connect((threshold1, 2), (self.qtgui_sink_x_0, 0))
 
-        self.beserver = BEServer()
-        self.connect((threshold1, 2), (self.beserver, 0))
-
-
+        #self.beserver = BEServer()
+        
 
 if __name__ == '__main__':
     parser = OptionParser(option_class=eng_option, usage="%prog: [options]")

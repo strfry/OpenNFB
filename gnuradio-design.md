@@ -73,12 +73,11 @@ class BandPass(Block):
     SAMPLERATE = input.sample_rate
     filter_ab = scipy.signal.iirfilter(8, [lo / SAMPLERATE, hi / SAMPLERATE], btype='bandpass')
 
-    self.gr_filter = filter.iir_filter_ffd(filter_ab[0], filter_ab[1], oldstyle=False)
+    self.gr_block = filter.iir_filter_ffd(filter_ab[0], filter_ab[1], oldstyle=False)
     
-  ### Return a GnuRadio block that is doing the actual work
-  def gr_block(self):
-    return self.gr_filter
-
+OpenNFB expects a GnuRadio block in gr_block.
+If the class implements the method general_work(), a gr_block will be generated
+and assigned this work function.
 
 The inputs and outputs map to the GnuRadio indices by their order of declaration.
 
