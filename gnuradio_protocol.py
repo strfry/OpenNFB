@@ -53,15 +53,27 @@ class Input(object):
 
         self.type = type
 
-    def __getattr__(self, attrname):
-        if hasattr(self, attrname):
-            return __getattribute__(self, attrname)
+    """Create a copy from a class attribute for a specific Block instance"""
+    def instantiate(self, block, name):
+        new = Input(type=self.type)
+        new.block = block
+        new.name = name
+        new.cls = self
 
-        if self.source:
+        print ('Input.instantiate', self, block, name, new)
+
+        return new
+
+
+    def __getattr__(self, attrname):
+        if 'block' not in self.__dict__:
+            raise ValueError('getattr call on uninstantiated Input', self)
+        
+        if 'source' in self.__dict__:
             return getattr(self.source, attrname)
 
-        raise AttributeError('Input does not have attribute \'' + attrname +
-            '\', nor any sources')
+        raise AttributeError(self, 'Input \'%s\' of Block %s does not have attribute \'%s\', nor any sources'
+            % (name, block, attrname))
 
 
 class Output(object):
@@ -78,21 +90,28 @@ class Output(object):
         self.source = source
         self.type = type
 
+    """Create a copy from a class attribute for a specific Block instance"""
+    def instantiate(self, block, name):
+        print ('Output.instantiate', self, block, name)
+        new = Output(type=self.type)
+        new.block = block
+        new.name = name
+
+        # Get the instance of the source object
+        new.source = block._get_input_instance(self.source)
+
+
+        return new
 
     def __getattr__(self, attrname):
-        print ('p1')
+        print ('Output getattr', attrname, self.__dict__['block'])
         #if hasattr(self, attrname):
-        if attrname in self.__dict__:
-            return self.__dict__[attrname]
+        #if object(self, attrname):
+        #    print ('p3')
+        #    return super(self).__getattr__(attrname)
 
-
-        print ('p2')
         source = self.__dict__['source']
 
-        print ('p3')
-
-        print ('Output getattr', attrname, source)
-        print ('p4')
 
         if source:
             return getattr(source, attrname)
@@ -101,22 +120,49 @@ class Output(object):
         raise AttributeError('Output does not have attribute \'' + attrname +
             '\', nor any sources')
 
+import copy
 
 class Block(object):
+    def _get_input_instance(self, input):
+        if not input: return None
+
+        for attr in dir(self):
+            inp = getattr(self, attr)
+            if type(inp) == Input and inp.cls == input:
+                return inp
+
+        raise AttributeError('Can not find %s in %s', (input, self))
+
     def __init__(self, *args, **kwargs):
         inputs = []
         outputs = []
 
+        # Search block for inputs/outputs, add them to a list
+        # Also replace the declaration with a copy (instance)
         for attrname in dir(self):
             attr = getattr(self, attrname)
-            if type(attr) == Input:
-                inputs.append(attr)
-            elif type(attr) == Output:
-                outputs.append(attr)
+            if type(attr) in (Input, Output):
+                print self, 'found type ', attr, attrname
+                #attr = copy.copy(attr)
+                attr = attr.instantiate(self, attrname)
+                print attr.name, attr.block
+                setattr(self, attrname, attr)
 
+                if type(attr) == Input:
+                    inputs.append(attr)
+                elif type(attr) == Output:
+                    outputs.append(attr)
+            
         inputs.sort(key=lambda x: x.order)
         outputs.sort(key=lambda x: x.order)
 
+        for i in inputs:
+            print ('Block', self, ' Input', i)
+
+        for i in outputs:
+            print ('Block', self, ' Output', i)
+
+        print (self, len(args), len(inputs), inputs)
         if len(args) < len(inputs):
             raise ValueError('Not enough arguments for input')
 
@@ -127,6 +173,7 @@ class Block(object):
 
             if isinstance(source, Block):
                 source = source.output
+                print ('Assign output', self, source)
 
             input.source = source
 
@@ -257,7 +304,21 @@ class top_block(gr.top_block, Qt.QWidget):
         self.top_layout.addWidget(osc.widget)
 
 
-        self.connect(src.gr_block, bp.gr_block, osc.gr_block)
+        #self.connect(src.gr_block, bp.gr_block, osc.gr_block)
+
+        self.wireup(osc)
+
+    def wireup(self, destination, visited=[]):
+        if destination in visited: return
+
+        visited = visited + [destination]
+
+        for idx in dir(destination):
+            inp = getattr(destination, idx)
+            if type(inp) == Input:
+                self.connect(inp.source.block.gr_block, inp.block.gr_block)
+                self.wireup(inp.source.block, visited)
+
         #self.connect(src.gr_block, osc.gr_block)
 
 
