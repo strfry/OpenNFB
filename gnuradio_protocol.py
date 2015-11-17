@@ -201,11 +201,36 @@ class InOutBlock(Block):
 
 class BandPass(InOutBlock):    
     def init(self, lo, hi): 
-        Wn = [lo / self.input.sample_rate / 2, hi / self.input.sample_rate / 2]
-        filter_ab = scipy.signal.iirfilter(8, Wn, btype='bandpass')
+        nyquist = self.input.sample_rate / 2.0
+        Wp = [lo / nyquist, hi / nyquist]
+        #Ws = [(lo - 1) / nyquist, (hi+1) / nyquist]
+        #b, a = scipy.signal.iirdesign(Wp, Ws, 0.1, 60.0)
+        b, a = scipy.signal.iirfilter(6, Wp, btype='bandpass',
+            ftype='ellip', rp=0.1, rs=60.0)
 
-        self.gr_block = filter.iir_filter_ffd(filter_ab[1], filter_ab[0], oldstyle=False)
+        #self.gr_block = filter.iir_filter_ffd(a, b, oldstyle=False)
+        self.gr_block = filter.iir_filter_ffd(b, a, oldstyle=False)
 
+class NotchFilter(InOutBlock):
+    def init(self, freq=50.0, mod=0.9):
+        theta = 2 * np.pi * 50 / self.input.sample_rate
+        zero = np.exp(np.array([1j, -1j]) * theta)
+        pole = mod * zero
+
+        a, b = np.poly(pole), np.poly(zero)
+        #notch_ab = numpy.poly(zero), numpy.poly(pole)
+        #notch_ab = scipy.signal.iirfilter(32, [30.0 / 125], btype='low')
+
+        self.gr_block = filter.iir_filter_ffd(b, a, oldstyle=False)
+        
+
+class RMS(InOutBlock):
+    def init(self, alpha=1.0):
+        self.gr_block = blocks.rms_ff(alpha)
+
+class DCBlock(InOutBlock):
+    def init(self, taps=16):
+        self.gr_block = filter.dc_blocker_ff(16, long_form=False)
 
 class Oscilloscope(Block):
     input = Input()
@@ -250,6 +275,8 @@ class UDPSource(Block):
         self.channel1.color = 'orange'
         self.gr_block = blocks.udp_source(gr.sizeof_float*1, "127.0.0.1", 9999, 1472, True)
         
+
+
 
 class top_block(gr.top_block, Qt.QWidget):
 
@@ -298,15 +325,28 @@ class top_block(gr.top_block, Qt.QWidget):
         test_source = blocks.udp_source(gr.sizeof_float*1, "127.0.0.1", 9999, 1472, True)
 
         src = UDPSource()
-        bp = BandPass(src.channel1, 0.0000001, 0.0002)
-        osc = Oscilloscope(bp)
+
+        # Signal Conditioning: DC Block and 50 Hz Notch Filter
+        ch1 = NotchFilter(src.channel1)
+        ch1 = DCBlock(ch1)
+
+        #notched = NotchFilter(notched)
+        #notched = NotchFilter(notched)
+        alpha = BandPass(ch1, 4, 8)
+        #alpha = RMS(alpha)
+        osc = Oscilloscope(alpha)
 
         self.top_layout.addWidget(osc.widget)
 
-
-        #self.connect(src.gr_block, bp.gr_block, osc.gr_block)
-
         self.wireup(osc)
+        #self.connect(src.gr_block, osc.gr_block)
+
+
+
+        #threshold1 = Threshold()
+
+        #self.beserver = BEServer()
+
 
     def wireup(self, destination, visited=[]):
         if destination in visited: return
@@ -319,31 +359,7 @@ class top_block(gr.top_block, Qt.QWidget):
                 self.connect(inp.source.block.gr_block, inp.block.gr_block)
                 self.wireup(inp.source.block, visited)
 
-        #self.connect(src.gr_block, osc.gr_block)
-
-
-        # Signal Conditioning: DC Block and 50 Hz Notch Filter
-        #dc_blocker = filter.dc_blocker_ff(16, long_form=False)
-        #self.connect((test_source, 0), (dc_blocker, 0))
-
-        theta = 2 * np.pi * 50 / 250
-        zero = np.exp(np.array([1j, -1j]) * theta)
-        pole = 0.999 * zero
-
-        #notch_ab = numpy.poly(pole), numpy.poly(zero)
-        #notch_ab = numpy.poly(zero), numpy.poly(pole)
-        #notch_ab = scipy.signal.iirfilter(32, [30.0 / 125], btype='low')
-
-        #notch_filter = filter.iir_filter_ffd(notch_ab[0], notch_ab[1], oldstyle=False)
         
-        #total_rms = blocks.rms_ff(alpha=0.2)
-        
-        #threshold1 = Threshold()
-        
-        #self.connect((total_rms, 0), (self.qtgui_sink_x_0, 0))
-
-
-        #self.beserver = BEServer()
         
 
 if __name__ == '__main__':
