@@ -15,7 +15,7 @@ if __name__ == '__main__':
         except:
             print "Warning: failed to XInitThreads()"
 
-from PyQt4 import Qt, QtGui
+from PyQt4 import Qt, QtCore, QtGui
 from gnuradio import blocks
 from gnuradio import eng_notation
 from gnuradio import filter
@@ -40,6 +40,9 @@ cnt = 0
 
 import threading, time
 import math
+
+class InputDict(object):
+    pass
 
 class Input(object):
     """Attribute type for describing signal inputs of Blocks"""
@@ -110,9 +113,10 @@ class Output(object):
         #    print ('p3')
         #    return super(self).__getattr__(attrname)
 
+        if hasattr(self.block, attrname):
+            return getattr(self.block, attrname)
+
         source = self.__dict__['source']
-
-
         if source:
             return getattr(source, attrname)
         print ('p5')
@@ -225,22 +229,38 @@ class NotchFilter(InOutBlock):
         
 
 class RMS(InOutBlock):
-    def init(self, alpha=1.0):
+    def init(self, alpha=0.0001):
         self.gr_block = blocks.rms_ff(alpha)
 
 class DCBlock(InOutBlock):
     def init(self, taps=16):
         self.gr_block = filter.dc_blocker_ff(16, long_form=False)
 
+class ExponentialAverage(InOutBlock):
+    def init(self, lookback = 1.0):
+        samples = length * self.input.sample_rate
+        scale = 1.0 / samples
+        self.gr_block = blocks.moving_average_ff(int(samples), scale)
+
+
+
+    def general_work(self, input_items, output_items):
+        print ('BarSpectrogram work', len(input_items[0]), output_items, input_items[0][0])
+
+        self.gr_block.consume_each(1)
+        self.gr_block.produce_each(1)
+
+        output_items[0][0] = result
+
+        self.buffer = input_items[0][-len(self.win):]
+        return 0
+
 class Oscilloscope(Block):
     input = Input()
 
     def init(self, history=512, autoscale=True):
-        name = 'Oscilloscope'
-        self.widget = pg.PlotWidget(title=name)
+        self.widget = pg.PlotWidget()
         self.widget.block = self
-
-        self.name = name
 
         self.gr_block.set_history(history)
 
@@ -250,22 +270,105 @@ class Oscilloscope(Block):
 
         self.widget.enableAutoRange('y', 0.95 if autoscale else False)
 
+        self.timer = QtCore.QTimer()
+        self.timer.timeout.connect(self.updateGUI)
+        self.timer.start(100)
+
 
     def general_work(self, input_items, output_items):
         print ('Oscilloscope work', len(input_items[0]), output_items, input_items[0][0])
 
         self.gr_block.consume_each(50)
 
-        self.plot.setData(input_items[0])
-        self.widget.update()
+        self.buffer = input_items[0]
 
         return 0
 
 
     def updateGUI(self):
-        for channel in self.plots:
-            plot = self.plots[channel]
-            plot.setData(channel.buffer)
+        self.plot.setData(self.buffer)
+        self.widget.update()
+
+class BarGraph(Block):
+    inputs = InputDict()
+
+    def init(self):
+        pass
+
+
+class BarSpectrogram(Block):
+    input = Input()
+
+
+    def init(self, lo=0, hi=125, bins=256, yrange=750, ratio=False):
+        self.widget = pg.PlotWidget()
+        self.widget.setLabel('bottom', 'Frequency', units='Hz')
+
+        self.bars = pg.BarGraphItem()
+
+        self.win = np.hanning(bins)
+        self.lo, self.hi = lo, hi
+        self.ratio = ratio
+        
+        FS = self.input.sample_rate
+
+        self.gr_block.set_history(bins)
+
+        #num_bars = int(round((self.bins - 1) * (self.hi - self.lo) / FS))
+        # This is total bullshit:
+        num_bars = len(np.zeros(bins)[lo: hi])
+
+        x = np.linspace(self.lo, self.hi, num_bars)
+
+        self.bars = pg.BarGraphItem(x=x, height=range(num_bars), width=1.0)
+        
+        self.bars.setOpts(brushes=[pg.hsvColor(float(x) / num_bars) for x in range(num_bars)])
+        self.widget.addItem(self.bars)
+
+        # TODO: Better autoranging features
+        #self.plot.enableAutoRange('xy', False)
+        
+        self.widget.setYRange(0, yrange)
+        self.widget.enableAutoRange('y', 0.95)
+
+
+        self.timer = QtCore.QTimer()
+        self.timer.timeout.connect(self.updateGUI)
+        self.timer.start(100)
+
+
+    def general_work(self, input_items, output_items):
+        print ('BarSpectrogram work', len(input_items[0]), output_items, input_items[0][0])
+
+        self.gr_block.consume_each(16)
+
+        self.buffer = input_items[0][-len(self.win):]
+        return 0
+
+    def updateGUI(self):
+
+
+        C = np.fft.rfft(self.buffer * self.win)
+        C = abs(C)
+
+        lo, hi = self.lo, self.hi
+        data = C[lo : hi]
+
+        if self.ratio:
+            data = data / sum(C)
+
+        self.bars.setOpts(height=data)
+
+        #self.widget.setData(input_items[0])
+        self.widget.update()
+
+        return 50
+
+        
+
+    def widget(self):
+        return self.plot
+
 
 class UDPSource(Block):
     channel1 = Output()
@@ -276,6 +379,34 @@ class UDPSource(Block):
         self.gr_block = blocks.udp_source(gr.sizeof_float*1, "127.0.0.1", 9999, 1472, True)
         
 
+import OSC
+
+# TODO: Make an OSC Connection class that makes send objects
+class OSCSend(Block):
+    input = Input()
+
+    def init(self, address, send_period=0.05):
+        self.samples = int(send_period * self.input.sample_rate)
+
+        self.client = OSC.OSCClient()
+        self.client.connect(('127.0.0.1', 5510))   # connect to Faust
+        self.address = address
+
+        self.gr_block.set_history(self.samples)
+
+
+    def general_work(self, input_items, output_items):
+        print ('OSCSend work', len(input_items[0]), output_items, input_items[0][0])
+
+        self.gr_block.consume_each(self.samples)
+
+        oscmsg = OSC.OSCMessage()
+        oscmsg.setAddress(self.address)
+        val = input_items[0][self.samples-1]
+        val = val / 6 * 200
+        oscmsg.append(val)
+        self.client.send(oscmsg)
+        return 0
 
 
 class top_block(gr.top_block, Qt.QWidget):
@@ -332,13 +463,24 @@ class top_block(gr.top_block, Qt.QWidget):
 
         #notched = NotchFilter(notched)
         #notched = NotchFilter(notched)
-        alpha = BandPass(ch1, 4, 8)
-        #alpha = RMS(alpha)
-        osc = Oscilloscope(alpha)
+        alpha = BandPass(ch1, 8, 12)
+        alpha.color = 'green'
+        alpha = RMS(alpha, 0.02)
+        #alpha = ExponentialAverage(alpha, 5.1)
 
-        self.top_layout.addWidget(osc.widget)
+        smrlevel = RMS(BandPass(ch1, 9.5, 12.5), 0.02)
 
-        self.wireup(osc)
+        oscclient = OSCSend(smrlevel, '/0x00/filter')
+
+        osci = Oscilloscope(alpha)
+        spec = BarSpectrogram(ch1, hi=42)
+
+        self.top_layout.addWidget(osci.widget)
+        self.top_layout.addWidget(spec.widget)
+
+        visited = self.wireup(osci)
+        visited = self.wireup(oscclient, visited)
+        self.wireup(spec, visited)
         #self.connect(src.gr_block, osc.gr_block)
 
 
@@ -349,7 +491,8 @@ class top_block(gr.top_block, Qt.QWidget):
 
 
     def wireup(self, destination, visited=[]):
-        if destination in visited: return
+        print 'wireup', destination, visited
+        if destination in visited: return visited
 
         visited = visited + [destination]
 
@@ -357,7 +500,9 @@ class top_block(gr.top_block, Qt.QWidget):
             inp = getattr(destination, idx)
             if type(inp) == Input:
                 self.connect(inp.source.block.gr_block, inp.block.gr_block)
-                self.wireup(inp.source.block, visited)
+                return self.wireup(inp.source.block, visited)
+
+        return visited
 
         
         
