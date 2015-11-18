@@ -2,6 +2,7 @@ from open_bci_v3 import OpenBCIBoard
 import sys, signal
 import socket
 import json
+import struct
 
 #app = QCoreApplication(sys.argv)
 #signal.signal(signal.SIGINT, signal.SIG_DFL)
@@ -15,7 +16,8 @@ if len(sys.argv) > 1:
 def send_packet(packet):
   data = json.dumps(packet.channel_data)
   sock.sendto(data.encode('utf-8'), ('localhost', 8888))
-  sock.sendto(data.encode('utf-8'), ('localhost', 9999))
+  data = struct.pack('=f', packet.channel_data[0] * 0.022351744455307063)
+  sock.sendto(data, ('localhost', 9999))
 
 board = OpenBCIBoard(ttyPath, scaled_output=False)
 board.print_register_settings()
