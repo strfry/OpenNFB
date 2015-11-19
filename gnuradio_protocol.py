@@ -270,6 +270,8 @@ class Oscilloscope(Block):
 
         self.widget.enableAutoRange('y', 0.95 if autoscale else False)
 
+        self.buffer = []
+
         self.timer = QtCore.QTimer()
         self.timer.timeout.connect(self.updateGUI)
         self.timer.start(100)
@@ -331,6 +333,7 @@ class BarSpectrogram(Block):
         self.widget.setYRange(0, yrange)
         self.widget.enableAutoRange('y', 0.95)
 
+        self.buffer = np.zeros(bins)
 
         self.timer = QtCore.QTimer()
         self.timer.timeout.connect(self.updateGUI)
