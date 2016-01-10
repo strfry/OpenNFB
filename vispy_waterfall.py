@@ -15,8 +15,8 @@ import numpy as np
 import math
 
 
-num_bins = 32
-num_lines = 32
+num_bins = 128
+num_lines = 16
 
 
 VERT_SHADER = """
@@ -44,13 +44,13 @@ void main() {
 
     //vec2 position = vec2(x - (1 - 1), a_position + index / u_n);
 
-    float y = line / num_lines - 0.5;
-    float x = index / num_bins - 0.5 + y / 2;
+    float y = line / num_lines - 1.0;
+    float x = index / num_bins - 1.0 ;//+ y / 2;
 
     float u = index / num_bins;
     float v = mod(line + map_offset, num_lines) / num_lines;
 
-    height = texture2D(heightmap, vec2(u, v)).x * .1;
+    height = texture2D(heightmap, vec2(u, v)).x;
 
     gl_Position = vec4(x, y + height, 0.0, 1.0);
     v_line = line;
@@ -66,7 +66,7 @@ varying float v_line;
 uniform sampler1D colormap;
 
 void main() {
-    gl_FragColor = texture1D(colormap, height * 5);
+    gl_FragColor = texture1D(colormap, height);
 
     if (fract(v_line) > 0.) {
         discard;
@@ -93,14 +93,11 @@ class Canvas(app.Canvas):
 
         self.program['heightmap'] = np.random.random(size=(num_lines, num_bins)).astype('float32')
         #print (dir(self.program['heightmap']))
-        #self.program['heightmap'].set_filter(gloo.GL_NEAREST, gloo.GL_NEAREST)
-        self.program['heightmap'].interpolation = 'nearest'
+        self.program['heightmap'].interpolation = 'nearest'#'nearest'
 
         self.program['colormap'] = Colormap(['r', 'g', 'b']).map(np.linspace(0, 1, 64)).astype('float32')
 
         gloo.set_viewport(0, 0, *self.physical_size)
-
-        self._timer = app.Timer('auto', connect=self.on_timer, start=True)
 
         gloo.set_state(clear_color='black', blend=True,
                        blend_func=('src_alpha', 'one_minus_src_alpha'))
@@ -114,23 +111,17 @@ class Canvas(app.Canvas):
         dx = np.sign(event.delta[1]) * .05
         self.update()
 
-    def on_timer(self, event):
-        """Add some data at the end of each signal (real-time signals)."""
-        k = 10
-        #tmp = y[:, :k]
-        #y[:, :-k] = y[:, k:]
-        #y[:, -k:] = tmp
-        #y[:, -k:] = y[]
-        #np.roll(y, k, 0)
-
-        #self.program['a_position'].set_data(y.ravel().astype(np.float32))
-        #self.program['heightmap'] = set_subdata
+    def add_new_line(self, data):
         map_offset = self.program['map_offset']
-        self.program['map_offset'] = (map_offset - .1) % num_lines
+        self.program['map_offset'] = (map_offset - 1) % num_lines
+        map_offset = int(self.program['map_offset'])
 
-        newline = np.random.random(size=(1, num_bins)).astype('float32')
-        self.program['heightmap'].set_data(newline, (map_offset, 0))
-        #np.random.random(size=(num_lines, num_bins)).astype('float32')
+        data = data.astype('float32')
+        data = data[:128]
+        print 'add_new_line', len(data), map_offset, data[::16]
+
+        #data = np.random.random(num_bins).astype('float32')
+        self.program['heightmap'].set_data([data], (map_offset, 0))
         self.update()
 
     def on_draw(self, event):
