@@ -1,4 +1,8 @@
+from blocks import InOutBlock, Block, Input, Output
 
+import numpy as np
+
+from gnuradio import filter, fft
 
 class BandPass(InOutBlock):    
     def init(self, lo, hi): 
@@ -60,7 +64,7 @@ class Stream2Vector(Block):
     input = Input()
     output = Output(type=(np.float32, 256))
 
-    def init(self, bins=256, framerate=2):
+    def init(self, bins=256, framerate=30):
         self.num_samples = int(self.input.sample_rate / framerate)
 
         self.gr_block.set_history(bins)
@@ -68,8 +72,6 @@ class Stream2Vector(Block):
 
     def general_work(self, input_items, output_items):
         self.gr_block.consume_each(self.num_samples)
-
-        print 'Stream2Vector work', len(input_items[0])
 
         #output_items[0][:self.bins] = input_items[0][-self.bins:]
         output_items[0][0] = input_items[0][-self.bins:]

@@ -2,6 +2,7 @@ import serial
 from sys import argv
 from string import Formatter
 import socket
+import struct
 
 import json
 
@@ -22,9 +23,10 @@ buffer = ""
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
 def send_packet(channels):
-	channels.extend([0, 0, 0, 0]) 
-	data = json.dumps(channels)
-	sock.sendto(data, ('localhost', 8888))
+	#channels.extend([0, 0, 0, 0]) 
+	#data = json.dumps(channels)
+	data = struct.pack('=f', channels[1])
+	sock.sendto(data, ('localhost', 9999))
 
 
 def parse(buf):

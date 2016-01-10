@@ -1,6 +1,6 @@
-lowInhibitRange = {0.5, 13.0}
+lowInhibitRange = {1.0, 7.0}
 rewardRange = {12.0, 15.0}
-highInhibitRange = {14.0, 38.0}
+highInhibitRange = {15.0, 25.0}
 
 -- TODO: Move this kind of function to a lua library, or include something existing
 function min(x, y)
@@ -15,6 +15,8 @@ function setup()
 
 	raw = channels[0]
 	raw = flow.NotchFilter(raw)
+	raw = flow.NotchFilter(raw)
+	raw = flow.BandPass(1, 30, raw)
 	raw = flow.DCBlock(raw).ac
 
 	SPEC = flow.BarSpectrogram('Spectrogram', raw)
@@ -27,8 +29,9 @@ function setup()
 	rewardBand.output.color = 'green'
 	highInhibitBand.output.color = 'blue'
 
-	OSC = flow.Oscilloscope('Oscilloscope', {--raw,
-		lowInhibitBand, rewardBand, highInhibitBand})
+	OSC = flow.Oscilloscope('Oscilloscope', {--raw
+		lowInhibitBand, rewardBand, highInhibitBand
+		})
 
 	artifactInhibit = flow.Threshold('Artifact Inhibit', flow.RMS(raw))
 	artifactInhibit.mode = 'decrease'
@@ -106,5 +109,5 @@ end
 
 -----------------------Auto-Generated config - DO NOT EDIT-----------------------
 function doc_config()
-	return { float = { }, main = { 'vertical', { { 'dock', 'Oscilloscope', { }}, { 'horizontal', { { 'dock', 'Spectrogram', { }}, { 'dock', 'Artifact Inhibit', { }}, { 'dock', 'Low Inhibit', { }}, { 'dock', 'Reward', { }}, { 'dock', 'High Inhibit', { }}}, { sizes = { 306, 97, 76, 53, 80}}}}, { sizes = { 241, 241}}}}
+	return { main = { 'vertical', { { 'dock', 'Oscilloscope', { }}, { 'horizontal', { { 'dock', 'Spectrogram', { }}, { 'dock', 'Artifact Inhibit', { }}, { 'dock', 'Low Inhibit', { }}, { 'dock', 'Reward', { }}, { 'dock', 'High Inhibit', { }}}, { sizes = { 413, 130, 103, 71, 108}}}}, { sizes = { 241, 241}}}, float = { }}
 end

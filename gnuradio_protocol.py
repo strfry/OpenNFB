@@ -17,8 +17,10 @@ if __name__ == '__main__':
 
 from PyQt4 import Qt, QtCore, QtGui
 from gnuradio import blocks
+from gnuradio import audio
 from gnuradio import eng_notation
 from gnuradio import filter
+from gnuradio import fft
 from gnuradio import gr
 from gnuradio import qtgui
 from gnuradio.eng_option import eng_option
@@ -29,7 +31,7 @@ import sys
 
 import pyqtgraph as pg
 
-from blocks import BEServer, Threshold
+#from blocks import BEServer, Threshold
 import numpy as np
 import scipy.signal
 
@@ -107,7 +109,7 @@ class Output(object):
         return new
 
     def __getattr__(self, attrname):
-        print ('Output getattr', attrname, self.__dict__['block'])
+        #print ('Output getattr', attrname, self.__dict__['block'])
         #if hasattr(self, attrname):
         #if object(self, attrname):
         #    print ('p3')
@@ -123,8 +125,6 @@ class Output(object):
 
         raise AttributeError('Output does not have attribute \'' + attrname +
             '\', nor any sources')
-
-import copy
 
 class Block(object):
     def _get_input_instance(self, input):
@@ -229,8 +229,9 @@ class NotchFilter(InOutBlock):
         
 
 class RMS(InOutBlock):
-    def init(self, alpha=0.0001):
+    def init(self, alpha=0.01):
         self.gr_block = blocks.rms_ff(alpha)
+
 
 class DCBlock(InOutBlock):
     def init(self, taps=16):
@@ -278,9 +279,10 @@ class Oscilloscope(Block):
 
 
     def general_work(self, input_items, output_items):
-        print ('Oscilloscope work', len(input_items[0]), output_items, input_items[0][0])
+        #print ('Oscilloscope work', len(input_items[0]), output_items, input_items[0][0])
 
-        self.gr_block.consume_each(50)
+        # TODO: Make relative to update rate
+        self.gr_block.consume_each(5)
 
         self.buffer = input_items[0]
 
@@ -309,6 +311,8 @@ class BarSpectrogram(Block):
         self.bars = pg.BarGraphItem()
 
         self.win = np.hanning(bins)
+        self.win = np.blackman(bins)
+        #self.win = np.ones(bins)
         self.lo, self.hi = lo, hi
         self.ratio = ratio
         
@@ -337,11 +341,11 @@ class BarSpectrogram(Block):
 
         self.timer = QtCore.QTimer()
         self.timer.timeout.connect(self.updateGUI)
-        self.timer.start(100)
+        self.timer.start(10)
 
 
     def general_work(self, input_items, output_items):
-        print ('BarSpectrogram work', len(input_items[0]), output_items, input_items[0][0])
+        #print ('BarSpectrogram work', len(input_items[0]), output_items, input_items[0][0])
 
         self.gr_block.consume_each(16)
 
@@ -364,9 +368,6 @@ class BarSpectrogram(Block):
 
         #self.widget.setData(input_items[0])
         self.widget.update()
-
-        return 50
-
         
 
     def widget(self):
@@ -381,6 +382,16 @@ class UDPSource(Block):
         self.channel1.color = 'orange'
         self.gr_block = blocks.udp_source(gr.sizeof_float*1, "127.0.0.1", 9999, 1472, True)
         
+
+#class FloatToShort(InOutBlock):
+#    def init(self):
+#        self.gr_block = 
+
+class AudioSink(Block):
+    input = Input()
+
+    def init(self):
+        self.gr_block = audio.sink(int(self.input.sample_rate), "", True)
 
 import OSC
 
@@ -399,7 +410,7 @@ class OSCSend(Block):
 
 
     def general_work(self, input_items, output_items):
-        print ('OSCSend work', len(input_items[0]), output_items, input_items[0][0])
+        print ('OSCSend work', len(input_items[0]), output_items, input_items[0])
 
         self.gr_block.consume_each(self.samples)
 
@@ -410,6 +421,39 @@ class OSCSend(Block):
         oscmsg.append(val)
         self.client.send(oscmsg)
         return 0
+
+
+class Stream2Vector(Block):
+    input = Input()
+    output = Output(type=(np.float32, 256))
+
+    def init(self, bins=256, framerate=2):
+        self.num_samples = int(self.input.sample_rate / framerate)
+
+        self.gr_block.set_history(bins)
+        self.bins = bins
+
+    def general_work(self, input_items, output_items):
+        self.gr_block.consume_each(self.num_samples)
+
+        print 'Stream2Vector work', len(input_items[0])
+
+        #output_items[0][:self.bins] = input_items[0][-self.bins:]
+        output_items[0][0] = input_items[0][-self.bins:]
+        #self.gr_block.produce(0, self.bins)
+        self.gr_block.produce(0, 1)
+
+        return 0
+
+class FFT(Block):
+    input = Input()
+    bins = Output()
+
+    def init(self, bins=256):
+        self.gr_block = fft.fft_vfc(256, forward=True, window=fft.window.blackmanharris(bins))
+
+        
+from blocks import Threshold
 
 
 class top_block(gr.top_block, Qt.QWidget):
@@ -462,7 +506,11 @@ class top_block(gr.top_block, Qt.QWidget):
 
         # Signal Conditioning: DC Block and 50 Hz Notch Filter
         ch1 = NotchFilter(src.channel1)
+        #ch1 = src.channel1
+        #ch1 = NotchFilter(ch1, freq=100)
         ch1 = DCBlock(ch1)
+
+        #ch1 = BandPass(ch1, 1, 40)
 
         #notched = NotchFilter(notched)
         #notched = NotchFilter(notched)
@@ -471,26 +519,55 @@ class top_block(gr.top_block, Qt.QWidget):
         alpha = RMS(alpha, 0.02)
         #alpha = ExponentialAverage(alpha, 5.1)
 
-        smrlevel = RMS(BandPass(ch1, 9.5, 12.5), 0.02)
+        smr = BandPass(ch1, 9.5, 12.5)
 
-        oscclient = OSCSend(smrlevel, '/0x00/filter')
+        sigs = alpha, smr
+        rmss = map(RMS, sigs)
 
-        osci = Oscilloscope(alpha)
-        spec = BarSpectrogram(ch1, hi=42)
+        #threshold = Threshold(rmss[1], 'increase')
+        #oscclient = OSCSend(threshold.ratio, '/0x00/filter')
+        #oscclient = OSCSend(rmss[1], '/0x00/filter')
+
+
+        audio = BandPass(ch1, 7, 12)
+        audio = ch1
+
+        #osci = Oscilloscope(rmss[1])
+        #osci = Oscilloscope(threshold.ratio)
+        spec = BarSpectrogram(ch1, lo=0, hi=127, bins=256)
+
+        vec = Stream2Vector(ch1)
+        fft = FFT(vec)
+        waterfall = WaterfallLines(fft.bins)
+        #fft = FFT(Stream2Vector(ch1))
+
+        osci = Oscilloscope(ch1) 
+        #self.top_layout.addWidget(waterfall.widget)
+        waterfall.widget.show()
 
         self.top_layout.addWidget(osci.widget)
+
+
+        audiosink = AudioSink(audio)
+
+        hlayout = Qt.QHBoxLayout()
+        hlayout.addWidget(osci.widget)
+        #\hlayout.addWidget(threshold.widget)
+        #widget = Qt.QWidget()
+        #widget.addLayout(hlayout)
+
+        #self.top_layout.addLayout(hlayout)
+
         self.top_layout.addWidget(spec.widget)
 
         visited = self.wireup(osci)
-        visited = self.wireup(oscclient, visited)
-        self.wireup(spec, visited)
-        #self.connect(src.gr_block, osc.gr_block)
-
-
-
-        #threshold1 = Threshold()
-
-        #self.beserver = BEServer()
+        #visited = self.wireup(osci0, visited)
+        #visited = self.wireup(oscclient, visited)
+#        visited = self.wireup(threshold, visited)
+        visited = self.wireup(spec, visited)
+        
+        visited = self.wireup(waterfall, visited)
+        
 
 
     def wireup(self, destination, visited=[]):

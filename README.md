@@ -8,12 +8,11 @@ so it is only sutable for those who do not fear source code and the command line
 
 ## Dependencies:
 
-* Python 3.1 or later
+* Python 2.7 or later
 * Numpy 1.7 or later
 * SciPy
-* PyQt5
-* PyQtGraph (you need github:develop branch for PyQt5 support)
-* traits
+* GnuRadio
+* PyQtGraph
 
 ## Hardware:
 
@@ -33,9 +32,7 @@ Replays are very useful for development without attaching electrodes each time.
 
 ### Recording
 
-This Information is deprecated, currently there is no recording facility:
-The script record_bdf.py connects to the OpenBCI and writes a file in BDF File Format (http://www.biosemi.com/faq/file_format.htm).
-This format was chosen because it supports 24 bit resolution and can easily be opened with EDFBrowser (http://www.teuniz.net/edfbrowser/) for verification
+WAV Files
 
 ### Feedback
 
