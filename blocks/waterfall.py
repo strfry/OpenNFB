@@ -1,3 +1,34 @@
+
+from blocks import Block, Input
+
+import numpy as np
+
+bins = 256
+
+class WaterfallLines(Block):
+    #input = Input(type=(np.complex64, 256))
+    input = Input()
+
+    def init(self):
+        self.canvas = Canvas()
+        self.widget = self.canvas.native
+
+        self.gr_block.set_history(bins)
+        self.win = np.blackman(bins)
+
+    def general_work(self, input_items, output_items):
+        self.gr_block.consume_each(256 / 30)
+
+
+        C = np.fft.rfft(input_items[0][:bins] * self.win)
+        C = abs(C) / 100
+
+        #print input_items
+        #line = input_items[0][0]
+        #line = np.abs(line)
+        self.canvas.add_new_line(C)
+        return 0
+
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # vispy: gallery 2
@@ -16,7 +47,7 @@ import math
 
 
 num_bins = 128
-num_lines = 16
+num_lines = 64
 
 
 VERT_SHADER = """
@@ -45,12 +76,12 @@ void main() {
     //vec2 position = vec2(x - (1 - 1), a_position + index / u_n);
 
     float y = line / num_lines - 1.0;
-    float x = index / num_bins - 1.0 ;//+ y / 2;
+    float x = index / num_bins + y / 2;
 
     float u = index / num_bins;
     float v = mod(line + map_offset, num_lines) / num_lines;
 
-    height = texture2D(heightmap, vec2(u, v)).x;
+    height = texture2D(heightmap, vec2(u, v)).x ;
 
     gl_Position = vec4(x, y + height, 0.0, 1.0);
     v_line = line;
@@ -81,8 +112,9 @@ void main() {
 
 class Canvas(app.Canvas):
     def __init__(self):
-        app.Canvas.__init__(self, title='Use your wheel to zoom!',
+        app.Canvas.__init__(self,
                             keys='interactive')
+
         self.program = gloo.Program(VERT_SHADER, FRAG_SHADER)
         self.program['index'] = [(x,) for x in range(num_bins)] * num_lines
         self.program['line'] = [(x,) * num_bins for x in range(num_lines)]
@@ -91,9 +123,10 @@ class Canvas(app.Canvas):
         self.program['num_bins'] = num_bins
         self.program['num_lines'] = num_lines
 
-        self.program['heightmap'] = np.random.random(size=(num_lines, num_bins)).astype('float32')
+        heightmap = np.random.random(size=(num_lines, num_bins)).astype('float32')
+
+        self.program['heightmap'] = gloo.Texture2D(data=heightmap, internalformat='r32f')
         #print (dir(self.program['heightmap']))
-        self.program['heightmap'].interpolation = 'nearest'#'nearest'
 
         self.program['colormap'] = Colormap(['r', 'g', 'b']).map(np.linspace(0, 1, 64)).astype('float32')
 
@@ -118,7 +151,7 @@ class Canvas(app.Canvas):
 
         data = data.astype('float32')
         data = data[:128]
-        print 'add_new_line', len(data), map_offset, data[::16]
+        #print 'add_new_line', len(data), map_offset, data[::16]
 
         #data = np.random.random(num_bins).astype('float32')
         self.program['heightmap'].set_data([data], (map_offset, 0))
@@ -133,7 +166,3 @@ class Canvas(app.Canvas):
         #    self.program['line'] = line
         self.program.draw('line_strip')
 
-
-if __name__ == '__main__':
-    c = Canvas()
-    app.run()
